@@ -1,0 +1,21 @@
+Meeting Minutes:
+
+Presented Figma document
+
+Question asked on whether we will include character animations for input in training grounds. At the moment it was not in the current scope and what we had in mind was more like a rhythm game input but we will discuss adding it for some characters.
+
+Discussed API contract and talked about layout of GET calls. Discussed making things more efficient such as caching some of the requests to not poll the server as much. Possible elements we can cache are characters, combos, and universal icons.
+
+TODO: look into caching efficiency for server requests to make system calls 
+
+Discussed user input on how it will translate to move ID. Future implementation would be POST for user submitted combos and query support. 
+
+Discussed games list and possible characters that we will implement
+
+Mentioned using Parser open source for the “training” portion for input handling and rendering. Also discussing building upon the open source portions to get the functionality we want using AI.
+
+Discussed weekly report and member contributions along with future planning
+
+TODO: Start mapping out components and building plan/specifications for the project and assigning parts to everyone
+
+TODO: Create github folders for meeting minutes and weekly reports
