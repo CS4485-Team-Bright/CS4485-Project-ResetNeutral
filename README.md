@@ -1,4 +1,4 @@
-# CS4485-Project-EasyCombo
+# CS4485-Project-ResetNeutral
 
 
 # Roles:
