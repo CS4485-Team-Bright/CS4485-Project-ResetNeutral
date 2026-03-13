@@ -1,0 +1,16 @@
+[down,up] //super jump
+[right+right] //forward dash
+[x+y] //forward dash
+[left+left] //backward dash
+[left, x+y] //backward dash
+[right+right] //backward dash
+[right, x+y] //backward dash
+[x+y] //chain dash
+[x] //normal
+[y] //normal
+[b] //normal
+[down,b] //anti-air
+[lt] //special 1
+[rt] //special 2
+[y+b] //throw
+[left+y+b] //air ok

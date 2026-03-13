@@ -1,0 +1,25 @@
+[lt] //foxfire blast
+[lt, lt] //foxfire leap
+[down+lt] //stalking dart
+[down+lt] //foxfire blast (air)
+[rt] //wild flares
+[ground_movement+rt] //spirit rush
+[air_movement+rt] //spirit rush (air)
+[down+rt] //bounce
+[rt+air] //trickster's flight
+[lt+hold(x)] //orb of deception
+[lt+hold(y)] //orb of deception
+[lt+hold(b)] //orb of deception
+[rt+hold(x)] //hyper spirit rush
+[rt+hold(y)] //hyper spirit rush
+[rt+hold(b)] //hyper spirit rush
+[lt+rt] //ultimate: charm
+[down+x+air] //falling spark
+[down+right+b] //swept away
+[x+y+air] // air dash
+[right+right+air] //air dash (right)
+[left+left+air] //air dash (left)
+[a] //spirit rush assist
+[left+a] //foxfire rain assist (left)
+[right+a] //foxfire rain assist (right)
+[down+a] //hyper spirit rush assist
