@@ -4,6 +4,8 @@
 
 ResetNeutral is a free, web-based platform for anyone looking to get into fighting games. It provides a centralized knowledge base of game mechanics, character move-sets, and combo data — plus an in-browser Training Ground where players can practice inputs without purchasing a game first.
 
+Currently Hosted at https://reset-neutral.netlify.app/
+Project Management located at https://github.com/orgs/CS4485-Team-Bright/projects/1/views/1
 ---
 
 ## Table of Contents
