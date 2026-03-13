@@ -30,7 +30,7 @@ export function HomePage() {
               className="text-4xl md:text-6xl text-white mb-4"
               style={{ fontFamily: "'UnifrakturMaguntia', cursive" }}
             >
-              Easy Combo
+              Reset Neutral
             </h1>
             <p className="text-lg md:text-xl text-slate-300 mb-8">
               The perfect place to reach the skillfloor. Learn fighting games,
@@ -219,7 +219,7 @@ export function HomePage() {
               className="text-xl text-white"
               style={{ fontFamily: "'UnifrakturMaguntia', cursive" }}
             >
-              Easy Combo
+              Reset Neutral
             </span>
             <div className="flex gap-6 text-sm text-slate-400">
               <Link to="/games" className="hover:text-white transition-colors">

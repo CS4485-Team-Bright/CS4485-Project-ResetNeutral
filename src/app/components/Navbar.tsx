@@ -15,7 +15,7 @@ export function Navbar() {
               className="text-2xl text-white"
               style={{ fontFamily: "'UnifrakturMaguntia', cursive" }}
             >
-              Easy Combo
+              Reset Neutral
             </span>
           </Link>
 
