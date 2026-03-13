@@ -279,6 +279,663 @@ export const games: Game[] = [
           { name: "Tornado Super", difficulty: "Advanced", inputs: "5H > 236S(3rd) > Tag > Assist > j.H > 236236S", damage: "400", notes: "Tornado launch into aerial Last Breath." },
         ],
       },
+      {
+        id: "darius",
+        name: "Darius",
+        title: "The Hand of Noxus",
+        description:
+          "Darius is a brutal Noxian commander who excels at close-range combat. In 2XKO, he is a juggernaut-style character with powerful, simple tools that reward good spacing and decisive reads.",
+        archetype: "Juggernaut / Brawler",
+        difficulty: "Easy",
+        color: "#b91c1c",
+        moves: [
+          {
+            name: "Decimate",
+            input: "214S",
+            damage: "80",
+            startup: "18f",
+            type: "Special",
+            description:
+              "A wide axe swing that hits around Darius. Great for catching rolls and contesting space."
+          },
+          {
+            name: "Crippling Strike",
+            input: "6H",
+            damage: "90",
+            startup: "20f",
+            type: "Special",
+            description:
+              "A heavy overhead chop that slows the opponent on hit."
+          },
+          {
+            name: "Apprehend",
+            input: "236P",
+            damage: "40",
+            startup: "22f",
+            type: "Special",
+            description:
+              "Darius pulls the opponent towards him, setting up close-range pressure."
+          },
+          {
+            name: "Noxian Guillotine",
+            input: "236236P",
+            damage: "320",
+            startup: "10f",
+            type: "Super",
+            description:
+              "A devastating dunk that deals more damage at low enemy health."
+          }
+        ],
+        combos: [
+          {
+            name: "Basic Corner Chop",
+            difficulty: "Beginner",
+            inputs: "5L > 5M > 214S",
+            damage: "150",
+            notes: "Simple confirm into Decimate to secure a knockdown."
+          },
+          {
+            name: "Pull and Punish",
+            difficulty: "Intermediate",
+            inputs: "236P > 5M > 6H",
+            damage: "190",
+            notes: "Use Apprehend to pull them in, then end with Crippling Strike."
+          },
+          {
+            name: "Guillotine Finisher",
+            difficulty: "Advanced",
+            inputs: "5M > 5H > 214S > Tag > Assist > 5M > 236236P",
+            damage: "380",
+            notes: "Route into Noxian Guillotine when you have meter to close out a round."
+          }
+        ]
+      },
+      {
+        id: "ahri",
+        name: "Ahri",
+        title: "The Nine-Tailed Fox",
+        description:
+          "Ahri is a charming Vastaya mage who manipulates emotions and orbs of magic. In 2XKO, she is a mobile, mid‑range mage/assassin hybrid with strong projectiles, deceptive movement, and powerful burst damage when she gets in.",
+        archetype: "Mobile Zoner / Assassin",
+        difficulty: "Medium",
+        color: "#f97316",
+        moves: [
+          {
+            name: "Orb of Deception",
+            input: "236P",
+            damage: "50+40",
+            startup: "16f",
+            type: "Special",
+            description:
+              "Ahri sends out and recalls her orb, dealing magic damage out and true damage on the way back."
+          },
+          {
+            name: "Fox-Fire",
+            input: "214P",
+            damage: "3x30",
+            startup: "14f",
+            type: "Special",
+            description:
+              "Three flames circle Ahri and home in on nearby opponents. Great for pressure after knockdowns."
+          },
+          {
+            name: "Charm",
+            input: "236K",
+            damage: "40",
+            startup: "20f",
+            type: "Special",
+            description:
+              "A heart-shaped projectile that briefly stuns and pulls the opponent toward Ahri on hit."
+          },
+          {
+            name: "Spirit Rush",
+            input: "236236P",
+            damage: "260",
+            startup: "9f",
+            type: "Super",
+            description:
+              "Ahri dashes forward in a burst of energy, firing orbs in multiple directions for a high‑damage finisher."
+          }
+        ],
+        combos: [
+          {
+            name: "Safe Poke String",
+            difficulty: "Beginner",
+            inputs: "5L > 5M > 236P",
+            damage: "135",
+            notes: "Basic confirm into Orb of Deception for chip and spacing."
+          },
+          {
+            name: "Charm Confirm",
+            difficulty: "Intermediate",
+            inputs: "236K > 5M > 214P",
+            damage: "185",
+            notes: "Land Charm from mid‑range, then convert into Fox‑Fire for extra damage."
+          },
+          {
+            name: "Spirit Rush Ender",
+            difficulty: "Advanced",
+            inputs: "5M > 5H > 236P > Tag > Assist > 5M > 236236P",
+            damage: "375",
+            notes: "Standard tag route into Spirit Rush to close out rounds when you have meter."
+          }
+        ]
+      },
+      {
+        id: "illaoi",
+        name: "Illaoi",
+        title: "The Kraken Priestess",
+        description:
+          "Illaoi is a towering priestess of the Bearded Lady who tests the faith of her foes with crushing blows and spectral tentacles. In 2XKO, she is a slow but overwhelming brawler who controls space with tentacles and punishes anyone who dares to challenge her ground.",
+        archetype: "Grappler / Space Control",
+        difficulty: "Medium",
+        color: "#16a34a",
+        moves: [
+          {
+            name: "Tentacle Slam",
+            input: "236P",
+            damage: "90",
+            startup: "20f",
+            type: "Special",
+            description:
+              "Summons a tentacle in front of Illaoi to slam the ground. Strong mid‑range poke and combo ender."
+          },
+          {
+            name: "Test of Spirit",
+            input: "214P",
+            damage: "70",
+            startup: "24f",
+            type: "Special",
+            description:
+              "Rips the opponent’s spirit a short distance away. On hit, follow‑up tentacle attacks deal extra damage."
+          },
+          {
+            name: "Harsh Lesson",
+            input: "623K",
+            damage: "100",
+            startup: "14f",
+            type: "Special",
+            description:
+              "A leaping strike toward a nearby tentacle or the opponent. Great as a call‑out and combo extender."
+          },
+          {
+            name: "Kraken’s Grasp",
+            input: "632146P",
+            damage: "340",
+            startup: "10f",
+            type: "Super",
+            description:
+              "Illaoi grabs the opponent and slams them repeatedly with spectral tentacles for massive damage."
+          }
+        ],
+        combos: [
+          {
+            name: "Basic Tentacle Ender",
+            difficulty: "Beginner",
+            inputs: "5L > 5M > 236P",
+            damage: "165",
+            notes: "Simple confirm into Tentacle Slam for knockdown and oki."
+          },
+          {
+            name: "Spirit Pull Conversion",
+            difficulty: "Intermediate",
+            inputs: "214P > 5M > 623K",
+            damage: "210",
+            notes: "Use Test of Spirit at mid‑range and convert with Harsh Lesson on hit."
+          },
+          {
+            name: "Kraken Finish",
+            difficulty: "Advanced",
+            inputs: "5M > 5H > 236P > Tag > Assist > 5M > 632146P",
+            damage: "390",
+            notes: "Standard tag route into Kraken’s Grasp to close out rounds."
+          }
+        ]
+      },
+      {
+        id: "braum",
+        name: "Braum",
+        title: "The Heart of the Freljord",
+        description:
+          "Braum is a warm‑hearted Freljordian hero who protects his allies with an indestructible shield. In 2XKO, he is a defensive support/tank who specializes in blocking for his partner, controlling the air, and turning defense into explosive counterattacks.",
+        archetype: "Defensive Tank / Support",
+        difficulty: "Easy",
+        color: "#3b82f6",
+        moves: [
+          {
+            name: "Winter’s Bite",
+            input: "236P",
+            damage: "60",
+            startup: "17f",
+            type: "Special",
+            description:
+              "Braum fires a freezing projectile that slows and applies a stack of stun. Great for checking approaches."
+          },
+          {
+            name: "Stand Behind Me",
+            input: "214K",
+            damage: "-",
+            startup: "12f",
+            type: "Special",
+            description:
+              "Braum leaps to his partner or a position in front of them, raising his shield and improving their defense."
+          },
+          {
+            name: "Unbreakable",
+            input: "22P",
+            damage: "-",
+            startup: "5f",
+            type: "Special",
+            description:
+              "Braum raises his shield to block incoming projectiles and lessen chip damage for both characters."
+          },
+          {
+            name: "Vault Breaker",
+            input: "623K",
+            damage: "90",
+            startup: "11f",
+            type: "Special",
+            description:
+              "An upward shield bash that functions as an anti‑air and combo finisher."
+          },
+          {
+            name: "Glacial Fissure",
+            input: "236236P",
+            damage: "300",
+            startup: "10f",
+            type: "Super",
+            description:
+              "Braum slams his shield into the ground, creating an icy shockwave that launches and controls a huge area."
+          }
+        ],
+        combos: [
+          {
+            name: "Safe Shield String",
+            difficulty: "Beginner",
+            inputs: "5L > 5M > 236P",
+            damage: "140",
+            notes: "Simple confirm into Winter’s Bite for safety and space control."
+          },
+          {
+            name: "Anti‑Air Conversion",
+            difficulty: "Intermediate",
+            inputs: "623K > 5M > 236P",
+            damage: "195",
+            notes: "Catch jumps with Vault Breaker and convert into Winter’s Bite."
+          },
+          {
+            name: "Fissure Punish",
+            difficulty: "Advanced",
+            inputs: "5H > 236P > Tag > Assist > 5M > 236236P",
+            damage: "380",
+            notes: "Use a heavy starter into Glacial Fissure to close out rounds."
+          }
+        ]
+      },
+      {
+        id: "blitzcrank",
+        name: "Blitzcrank",
+        title: "The Great Steam Golem",
+        description:
+          "Blitzcrank is a massive, steam‑powered golem who excels at isolating opponents. In 2XKO, he is a grappler/support hybrid with a terrifying hook, armored approaches, and big payoff once he closes the gap.",
+        archetype: "Grappler / Support",
+        difficulty: "Medium",
+        color: "#facc15",
+        moves: [
+          {
+            name: "Rocket Grab",
+            input: "236P",
+            damage: "70",
+            startup: "20f",
+            type: "Special",
+            description:
+              "Fires a mechanical hand forward and pulls the first opponent it connects with straight to Blitzcrank."
+          },
+          {
+            name: "Power Fist",
+            input: "6H",
+            damage: "100",
+            startup: "18f",
+            type: "Special",
+            description:
+              "Empowers Blitzcrank’s next punch to pop the opponent into the air for big follow‑ups."
+          },
+          {
+            name: "Overdrive",
+            input: "214K",
+            damage: "-",
+            startup: "10f",
+            type: "Special",
+            description:
+              "Blitzcrank revs up, gaining armor and increased movement speed for a short duration."
+          },
+          {
+            name: "Static Field",
+            input: "236236P",
+            damage: "310",
+            startup: "9f",
+            type: "Super",
+            description:
+              "Unleashes a massive electrical blast around Blitzcrank, stunning nearby foes and dealing huge damage."
+          }
+        ],
+        combos: [
+          {
+            name: "Hook into Fist",
+            difficulty: "Beginner",
+            inputs: "236P > 5M > 6H",
+            damage: "185",
+            notes: "Basic Rocket Grab confirm into Power Fist juggle."
+          },
+          {
+            name: "Armored Approach",
+            difficulty: "Intermediate",
+            inputs: "214K > 5M > 236P > 6H",
+            damage: "230",
+            notes: "Use Overdrive armor to force your way in, then hook and launch."
+          },
+          {
+            name: "Static Finish",
+            difficulty: "Advanced",
+            inputs: "236P > 5M > 6H > Tag > Assist > 5M > 236236P",
+            damage: "395",
+            notes: "Standard hook starter into Static Field to close out rounds."
+          }
+        ]
+      },
+      {
+        id: "vi",
+        name: "Vi",
+        title: "The Piltover Enforcer",
+        description:
+          "Vi is a hot‑headed enforcer with giant hextech gauntlets. In 2XKO, she is a rushdown brawler who blows through defenses with armored dashes, crushing corner pressure, and explosive damage off a single hit.",
+        archetype: "Rushdown / Brawler",
+        difficulty: "Medium",
+        color: "#ec4899",
+        moves: [
+          {
+            name: "Vault Breaker",
+            input: "236K (hold)",
+            damage: "80–110",
+            startup: "18f",
+            type: "Special",
+            description:
+              "Vi charges forward with a powerful punch. Can be held to increase range and damage."
+          },
+          {
+            name: "Denting Blows",
+            input: "214P",
+            damage: "3x30",
+            startup: "12f",
+            type: "Special",
+            description:
+              "A series of body blows that shreds guard and sets up frame advantage."
+          },
+          {
+            name: "Excessive Force",
+            input: "623P",
+            damage: "90",
+            startup: "11f",
+            type: "Special",
+            description:
+              "An uppercut with a shockwave. Works as an anti‑air and combo extender near the corner."
+          },
+          {
+            name: "Assault and Battery",
+            input: "236236K",
+            damage: "320",
+            startup: "8f",
+            type: "Super",
+            description:
+              "Vi locks on to the opponent and rushes them down with an unavoidable sequence of punches."
+          }
+        ],
+        combos: [
+          {
+            name: "Simple Gauntlet String",
+            difficulty: "Beginner",
+            inputs: "5L > 5M > 214P",
+            damage: "160",
+            notes: "Easy confirm into Denting Blows for corner carry and pressure."
+          },
+          {
+            name: "Charged Breaker Route",
+            difficulty: "Intermediate",
+            inputs: "5M > 5H > 236K(hold)",
+            damage: "210",
+            notes: "Use a charged Vault Breaker for extra damage and a strong knockdown."
+          },
+          {
+            name: "Assault Finish",
+            difficulty: "Advanced",
+            inputs: "5M > 5H > 214P > Tag > Assist > 5M > 236236K",
+            damage: "400",
+            notes: "Spend meter on Assault and Battery to end high‑damage sequences."
+          }
+        ]
+      },
+      {
+        id: "warwick",
+        name: "Warwick",
+        title: "The Uncaged Wrath of Zaun",
+        description:
+          "Warwick is a monstrous chimera who hunts by scent. In 2XKO, he is a rushdown/berserker character with strong mobility, life‑steal moves, and terrifying access to reversals when low on health.",
+        archetype: "Rushdown / Berserker",
+        difficulty: "Hard",
+        color: "#10b981",
+        moves: [
+          {
+            name: "Jaws of the Beast",
+            input: "214K",
+            damage: "80",
+            startup: "14f",
+            type: "Special",
+            description:
+              "A lunge bite that heals Warwick on hit and sideswitches when done close."
+          },
+          {
+            name: "Blood Hunt",
+            input: "22P",
+            damage: "-",
+            startup: "15f",
+            type: "Special",
+            description:
+              "Warwick enters a hunting stance, gaining speed and tracking toward low‑health enemies."
+          },
+          {
+            name: "Primal Howl",
+            input: "236P",
+            damage: "60",
+            startup: "13f",
+            type: "Special",
+            description:
+              "A burst of fear around Warwick that pushes the opponent away or sets up pressure on hit."
+          },
+          {
+            name: "Infinite Duress",
+            input: "236236K",
+            damage: "330",
+            startup: "9f",
+            type: "Super",
+            description:
+              "Warwick pounces forward in a long‑range grab, mauling the opponent repeatedly and healing a large amount."
+          }
+        ],
+        combos: [
+          {
+            name: "Bite Conversion",
+            difficulty: "Beginner",
+            inputs: "5L > 5M > 214K",
+            damage: "170",
+            notes: "Basic confirm into Jaws of the Beast for damage and healing."
+          },
+          {
+            name: "Fear Loop",
+            difficulty: "Intermediate",
+            inputs: "5M > 236P > 5M > 214K",
+            damage: "215",
+            notes: "Use Primal Howl to extend pressure into another bite."
+          },
+          {
+            name: "Duress Chaser",
+            difficulty: "Advanced",
+            inputs: "Blood Hunt active > 5M > 5H > 214K > Tag > Assist > 5M > 236236K",
+            damage: "405",
+            notes: "Leverage Blood Hunt speed to land a starter and route into Infinite Duress."
+          }
+        ]
+      },
+      {
+        id: "teemo",
+        name: "Teemo",
+        title: "The Swift Scout",
+        description:
+          "Teemo is a yordle scout who specializes in guerrilla warfare and toxic traps. In 2XKO, he is a tricky hit‑and‑run zoner with strong movement, obnoxious projectiles, and lingering traps that force opponents to play his game.",
+        archetype: "Tricky Zoner / Hit‑and‑Run",
+        difficulty: "Medium",
+        color: "#22c55e",
+        moves: [
+          {
+            name: "Blinding Dart",
+            input: "236P",
+            damage: "60",
+            startup: "16f",
+            type: "Special",
+            description:
+              "Teemo fires a poisonous dart that briefly blinds and annoys opponents trying to swing back."
+          },
+          {
+            name: "Move Quick",
+            input: "214K",
+            damage: "-",
+            startup: "10f",
+            type: "Special",
+            description:
+              "A mobility buff that increases Teemo’s walk speed and alters his jump arc for a short time."
+          },
+          {
+            name: "Toxic Shot",
+            input: "22P",
+            damage: "40+20",
+            startup: "12f",
+            type: "Special",
+            description:
+              "Empowers Teemo’s next few attacks with extra poison damage over time."
+          },
+          {
+            name: "Noxious Trap",
+            input: "214P",
+            damage: "70",
+            startup: "24f",
+            type: "Special",
+            description:
+              "Places an invisible mushroom on the ground that explodes when stepped on, poisoning and launching the opponent."
+          },
+          {
+            name: "Guerrilla Ambush",
+            input: "236236P",
+            damage: "290",
+            startup: "9f",
+            type: "Super",
+            description:
+              "Teemo vanishes and reappears with a barrage of darts and traps, covering the screen in poison."
+          }
+        ],
+        combos: [
+          {
+            name: "Basic Poison String",
+            difficulty: "Beginner",
+            inputs: "5L > 5M > 236P",
+            damage: "140",
+            notes: "Simple confirm into Blinding Dart for safe chip and poison."
+          },
+          {
+            name: "Trap Conversion",
+            difficulty: "Intermediate",
+            inputs: "214P (trigger) > 5M > 22P > 5H",
+            damage: "210",
+            notes: "Use a triggered Noxious Trap to start a combo and layer Toxic Shot."
+          },
+          {
+            name: "Ambush Ender",
+            difficulty: "Advanced",
+            inputs: "5M > 5H > 236P > Tag > Assist > 5M > 236236P",
+            damage: "380",
+            notes: "Standard Teemo route that ends in Guerrilla Ambush when you have meter."
+          }
+        ]
+      },
+      {
+        id: "caitlyn",
+        name: "Caitlyn",
+        title: "The Sheriff of Piltover",
+        description:
+          "Caitlyn is a precise sniper who dominates long‑range combat. In 2XKO, she is a pure zoner with powerful rifle shots, traps that control the ground, and a devastating snipe super that punishes any mistake.",
+        archetype: "Pure Zoner / Sniper",
+        difficulty: "Medium",
+        color: "#38bdf8",
+        moves: [
+          {
+            name: "Piltover Peacemaker",
+            input: "236P",
+            damage: "70",
+            startup: "18f",
+            type: "Special",
+            description:
+              "A straight‑line rifle shot that pierces through opponents at longer ranges."
+          },
+          {
+            name: "Yordle Snap Trap",
+            input: "214P",
+            damage: "50",
+            startup: "22f",
+            type: "Special",
+            description:
+              "Places a bear trap on the ground. On trigger, it roots the opponent and marks them for bonus damage."
+          },
+          {
+            name: "90 Caliber Net",
+            input: "214K",
+            damage: "40",
+            startup: "16f",
+            type: "Special",
+            description:
+              "Fires a net that pushes Caitlyn backward and the opponent slightly forward, great for repositioning and escaping pressure."
+          },
+          {
+            name: "Ace in the Hole",
+            input: "236236P",
+            damage: "320",
+            startup: "12f",
+            type: "Super",
+            description:
+              "Caitlyn lines up a full‑screen snipe on the marked opponent for massive, precise damage."
+          }
+        ],
+        combos: [
+          {
+            name: "Safe Rifle Confirm",
+            difficulty: "Beginner",
+            inputs: "5L > 5M > 236P",
+            damage: "150",
+            notes: "Basic confirm into Piltover Peacemaker to keep opponents at arm’s length."
+          },
+          {
+            name: "Trap Setup Route",
+            difficulty: "Intermediate",
+            inputs: "5M > 214P > (trap trigger) > 5H > 236P",
+            damage: "215",
+            notes: "Use Yordle Snap Trap mid‑string, then convert when it triggers for bonus damage."
+          },
+          {
+            name: "Marked Snipe",
+            difficulty: "Advanced",
+            inputs: "214P (trigger) > 5M > 5H > Tag > Assist > 5M > 236236P",
+            damage: "395",
+            notes: "Spend meter on Ace in the Hole after a trap mark for maximum payoff."
+          }
+        ]
+      },
     ],
   },
 ];
