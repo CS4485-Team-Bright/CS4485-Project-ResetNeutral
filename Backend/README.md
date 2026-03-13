@@ -1,4 +1,4 @@
-## Fighting Game Data Scraper (Flask) v1.1
+## Fighting Game Data Scraper (Flask) v1.2
 
 This backend exposes fighting game data (games, characters, and move lists) for **SF6**, **GGST**, and **2XKO** by scraping JSON data from the public FAT repository:
 
