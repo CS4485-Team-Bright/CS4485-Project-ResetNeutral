@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, abort
+from flask import Flask, jsonify, abort, request
 from flask_caching import Cache
 import requests
 
@@ -122,8 +122,6 @@ def get_game_details(game_id: str):
             "specificCharacterStates": data["details"].get(
                 "specificCharacterStates", {}
             ),
-            "universalDataPoints": data["details"].get("universalDataPoints", {}),
-            "statsPoints": data["details"].get("statsPoints", {}),
         }
     )
 
@@ -160,7 +158,28 @@ def get_character_moves(game_id: str, character_name: str):
     except RuntimeError as exc:
         abort(502, description=str(exc))
 
+    details = data.get("details", {})
     framedata = data.get("framedata", {})
+
+    # Build the list of valid states for this character:
+    # - global characterStates (e.g. ["normal"])
+    # - plus any specificCharacterStates for this character (e.g. ["Dragon Install"])
+    global_states = details.get("characterStates", []) or []
+    specific_states_map = details.get("specificCharacterStates", {}) or {}
+    char_specific_states = specific_states_map.get(character_name, []) or []
+
+    # Preserve order while de-duplicating
+    available_states: list[str] = []
+    for s in list(global_states) + list(char_specific_states):
+        if s not in available_states:
+            available_states.append(s)
+
+    # Optional state filter from query string
+    # Example: /games/ggst/characters/Ky/moves?state=Dragon%20Install
+    requested_state = request.args.get("state")
+    if requested_state is not None and requested_state not in available_states:
+        abort(400, description="Invalid state for character")
+
     char_data = framedata.get(character_name)
     if not char_data:
         abort(404, description="Character not found in frame data")
@@ -172,13 +191,14 @@ def get_character_moves(game_id: str, character_name: str):
         {
             "gameId": game_id,
             "character": character_name,
+            "availableStates": available_states,
+            "selectedState": requested_state,
             "moves": moves,
         }
     )
 
 
 if __name__ == "__main__":
-    # Default development server (for now localhost:5000)
-    app.run(host="0.0.0.0", port=5000, debug=True)
-
+    # Default development server (for now localhost:8000)
+    app.run(host="0.0.0.0", port=8000, debug=True)
 

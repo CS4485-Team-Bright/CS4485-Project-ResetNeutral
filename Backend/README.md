@@ -1,4 +1,4 @@
-## Fighting Game Data Scraper (Flask) v1.0
+## Fighting Game Data Scraper (Flask) v1.2
 
 This backend exposes fighting game data (games, characters, and move lists) for **SF6**, **GGST**, and **2XKO** by scraping JSON data from the public FAT repository:
 
@@ -14,9 +14,8 @@ This is a simple Flask backend that exposes the data via a REST API.
 The data is (in-memory) cached for 1 hour to reduce the load on the server.
 We plan to have user caching as well (TanStack Query is my suggestion).
 
-WARNING: Currently, this data is taking in too much (all the) information 
-from the FAT repo and is not adjusted for our website. This will be solved 
-by next week, probably over the weekend even.
+TO-BE-DONE: Currently, the data is no longer taking in too much information 
+from the FAT repo. However, work on universalDataPoints still needs to be accomplished.
 
 ### Setup
 
@@ -44,8 +43,6 @@ The server will start on `http://localhost:5000`.
   - `characterList`
   - `characterStates`
   - `specificCharacterStates`
-  - `universalDataPoints`
-  - `statsPoints`
 
 - **GET** `/games/<game_id>/characters`  
   Returns the character list for the given game.
@@ -54,7 +51,13 @@ The server will start on `http://localhost:5000`.
   Returns the moves for a specific character in a game, using FAT's frame data JSON.
   - `gameId`
   - `character`
+  - `availableStates`: list of valid states for this character, combining `characterStates` and `specificCharacterStates[character]` (e.g. `["normal", "Dragon Install"]` for Ky).
+  - `selectedState`: the state requested via the `state` query parameter, or `null` if none was specified.
   - `moves`: nested object of move categories (e.g. `normal`, `special`) and individual moves.
+
+  You can optionally filter by state (validated against `availableStates`) using the `state` query parameter, for example:
+
+  - `/games/ggst/characters/Ky/moves?state=Dragon%20Install`
 
 **Notes**
 
