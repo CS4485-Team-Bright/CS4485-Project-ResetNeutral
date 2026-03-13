@@ -51,7 +51,13 @@ The server will start on `http://localhost:5000`.
   Returns the moves for a specific character in a game, using FAT's frame data JSON.
   - `gameId`
   - `character`
+  - `availableStates`: list of valid states for this character, combining `characterStates` and `specificCharacterStates[character]` (e.g. `["normal", "Dragon Install"]` for Ky).
+  - `selectedState`: the state requested via the `state` query parameter, or `null` if none was specified.
   - `moves`: nested object of move categories (e.g. `normal`, `special`) and individual moves.
+
+  You can optionally filter by state (validated against `availableStates`) using the `state` query parameter, for example:
+
+  - `/games/ggst/characters/Ky/moves?state=Dragon%20Install`
 
 **Notes**
 
