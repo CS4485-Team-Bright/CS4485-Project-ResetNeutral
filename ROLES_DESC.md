@@ -1,6 +1,3 @@
-# CS4485-Project-ResetNeutral
-
-
 # Roles:
 ## Backend
 ### Database & Auth Lead (Firebase):
