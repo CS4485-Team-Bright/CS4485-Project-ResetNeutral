@@ -55,8 +55,34 @@ export function GamePage() {
                 className="w-14 h-14 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xl"
                 style={{ backgroundColor: character.color + "30", borderColor: character.color + "60", borderWidth: 2 }}
               >
-                {character.name[0]}
-              </div>
+                {character.image ? (
+                <div
+                    className="w-16 h-16 rounded-2xl overflow-hidden flex items-center justify-center flex-shrink-0 border-2"
+                    style={{
+                      borderColor: character.color + "50",
+                    }}
+                  >
+                    <img
+                      src={character.image}
+                      alt={character.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div
+                    className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 border-2"
+                    style={{
+                      backgroundColor: character.color + "20",
+                      borderColor: character.color + "50",
+                    }}
+                  >
+                    <div className="text-center px-4">
+                      <div className="text-blue-500/30 text-3xl mb-1">🥋</div>
+                      <p className="text-slate-500 text-xs">Character portrait</p>
+                    </div>
+                  </div>
+                )}
+                </div>
 
               <div className="flex-1 min-w-0">
                 <h3 className="text-white">{character.name}</h3>

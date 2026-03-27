@@ -5,6 +5,7 @@ export interface Move {
   startup: string;
   type: string;
   description: string;
+  gif?: string; // Optional URL to move demonstration GIF
 }
 
 export interface Combo {
@@ -25,7 +26,9 @@ export interface Character {
   moves: Move[];
   combos: Combo[];
   color: string;
+  image?: string; // Optional URL to character portrait/image
 }
+
 
 export interface Game {
   id: string;
@@ -141,8 +144,9 @@ export const games: Game[] = [
         archetype: "All-Rounder / Shoto",
         difficulty: "Easy",
         color: "#ffffff",
+        image: "https://external-preview.redd.it/til-street-fighters-ryu-is-based-on-a-real-life-karate-v0-tKEd3TfaVhTy3avC_vhoV14aPO0NbEtmrL62lwoFQsE.jpg?width=640&crop=smart&auto=webp&s=c47761738e2e2a4d66f9a62611c4f5b9bdc04a08",
         moves: [
-          { name: "Hadouken", input: "236P", damage: "60", startup: "13f", type: "Special", description: "Ryu's iconic fireball. A key zoning tool and combo ender." },
+          { name: "Hadouken", input: "236P", damage: "60", startup: "13f", type: "Special", description: "Ryu's iconic fireball. A key zoning tool and combo ender.", gif:"https://media.tenor.com/hQA6jk2FxwQAAAAM/ryu-hadouken.gif" },
           { name: "Shoryuken", input: "623P", damage: "100-140", startup: "6f", type: "Special", description: "The legendary uppercut. Invincible reversal that defines Ryu." },
           { name: "Tatsumaki Senpukyaku", input: "214K", damage: "80-120", startup: "14f", type: "Special", description: "Ryu's spinning kick. Good for closing distance and combos." },
           { name: "Hashogeki", input: "236P (charged)", damage: "90", startup: "28f", type: "Special", description: "A charged energy blast unique to SF6 Ryu." },
