@@ -43,7 +43,7 @@ export class Start extends Phaser.Scene {
         this.cursors = this.input.keyboard.createCursorKeys();
 
         this.comboDelta = 0;
-        this.currentCombo = [];
+        this.currentCombo = "";
 
         this.keyObjects = this.input.keyboard.addKeys({
             up: "W",
@@ -64,9 +64,26 @@ export class Start extends Phaser.Scene {
         // Setup Gamepad controls
         const text = this.add.text(10, 10, 'Press a button on the Gamepad to use', { font: '16px Courier', fill: '#00ff00' });
 
-        this.sprite = this.add.image(640, 360, 'base');
+        //this.sprite = this.add.image(640, 360, 'base');
 
-        this.gamepad = scene.input.gamepad.getAll();
+        this.gamepad = this.input.gamepad.getAll();
+
+        if(this.gamepad){
+            this.input.gamepad.on('down', (event) => {
+                console.log('Gamepad key pressed: ', event.key);
+                this.comboDelta = 0;
+                this.currentCombo.push(event.key);
+            });
+        }
+
+        this.input.keyboard.on('keydown', (event) =>{
+            console.log('Any key pressed: ', event.key);
+            this.comboDelta = 0;
+            //this.currentCombo.push(event.key);
+            this.currentCombo += event.key;
+            console.log("Current Combo: ", this.currentCombo);
+            console.log("ComboDelta: ", this.comboDelta);
+        });
 
 /*
         this.input.gamepad.once('down', function (pad, button, index)
@@ -85,12 +102,17 @@ export class Start extends Phaser.Scene {
         // Delta time in ms
         if (this.comboDelta > 500) {
             this.comboDelta = 0;
-            this.currentCombo = [];
+            this.currentCombo = "";
         }
+
+        // This is where the combo detection would go
+
+        this.comboDelta += delta;
+
+        /*
         // Gamepad Controls
         if (this.gamepad)
         {
-            // this.gamepad.on ('down', function (gamepad, button, value) {});
             // Directional Input using D-Pad
             if (this.gamepad.left)
             {
@@ -182,9 +204,10 @@ export class Start extends Phaser.Scene {
                 // SF6 - Heavy Kick
             }
         }
+        */
 
+        /*
         // Handle keyboard input
-        // this.keyObjects.on('down', function (event) { });
         if (this.keyObjects.left.isDown) {
             // Highlight Key
             this.sprite.setTexture('LEFT_Arrow');
@@ -262,10 +285,7 @@ export class Start extends Phaser.Scene {
             this.comboDelta = 0;
             this.currentCombo.push('lt');
         }
-
-        // This is where the combo detection would go
-
-        this.comboDelta += delta;
+        */
     }
 
 }
