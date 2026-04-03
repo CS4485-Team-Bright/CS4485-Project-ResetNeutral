@@ -83,11 +83,7 @@ easycombo/
 │               └── admin.js
 └── backend/
     ├── app/
-    │   ├── __init__.py
-    │   ├── config.py
-    │   ├── models.py
-    │   ├── api/
-    │   │   ├── datascraper.py
+    │   │── datascraper.py
     ├── .env.example
     ├── requirements.txt
     └── README.md
@@ -121,7 +117,7 @@ Open `frontend/public/index.html` directly in a browser, or serve with any stati
 npx serve frontend/public
 ```
 
-Set `VITE_API_BASE_URL` (or equivalent) to point at your running Flask backend.
+Set `GITHUB_RAW_BASE_URL` (or equivalent) to point at your running Flask backend.
 
 ### Seed Data
 
@@ -145,20 +141,17 @@ Copy `.env.example` and fill in all values. The backend will **fail fast** at st
 
 | Variable | Description |
 |---|---|
-| `DB_URL` / `FIREBASE_PROJECT_ID` / `SUPABASE_URL` | Primary data store connection |
+| `SUPABASE_URL` / `SUPABASE_API_KEY` | Primary data store connection |
 | `ADMIN_JWT_SECRET` | Secret for admin auth tokens |
 | `PORT` | Flask listen port |
 | `FRONTEND_URL` | Allowed CORS origin |
 | `NODE_ENV` | `development` \| `staging` \| `production` |
-| `AI_PROVIDER_KEY` | Key for AI summary provider (Phase 3) |
 
 **Frontend**
 
 | Variable | Description |
 |---|---|
-| `VITE_API_BASE_URL` | Base URL for the Flask backend |
-
-> **Security:** Never hardcode secrets. AI provider keys must never appear in frontend code or browser network requests.
+| `GITHUB_RAW_BASE_URL` | Base URL for the Flask backend |
 
 ---
 
