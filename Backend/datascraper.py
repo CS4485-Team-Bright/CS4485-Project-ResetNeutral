@@ -197,7 +197,6 @@ def get_character_moves(game_id: str, character_name: str):
         }
     )
 
-
 if __name__ == "__main__":
     # Default development server (for now localhost:8000)
     app.run(host="0.0.0.0", port=8000, debug=True)
