@@ -1,3 +1,7 @@
+//import { comboSet } from "../../combos/combos";
+
+const comboSet = new Map();
+
 export class Start extends Phaser.Scene {
 
     gamepad;
@@ -36,6 +40,23 @@ export class Start extends Phaser.Scene {
         this.load.image('base', 'assets/Default.png');
     }
 
+    keyboardListener(event){
+        console.log('Key pressed: ', this);
+        this.comboDelta = 0;
+        //this.currentCombo.push(event.key);
+        this.currentCombo += this.keyCode;
+        console.log("Current Combo: ", this.currentCombo);
+        console.log("ComboDelta: ", this.comboDelta);
+    }
+
+    gamepadListener(gamepad, button, value){
+        //console.log('Gamepad: ', gamepad);
+        console.log('Button: ', button);
+        //console.log('Value: ', value);
+
+        //Switch statement on 
+    }
+
     create() {
         //this.background = this.add.image(640, 360, 'background');
 
@@ -69,32 +90,14 @@ export class Start extends Phaser.Scene {
         this.gamepad = this.input.gamepad.getAll();
 
         if(this.gamepad){
-            this.input.gamepad.on('down', (event) => {
-                console.log('Gamepad key pressed: ', event.key);
-                this.comboDelta = 0;
-                this.currentCombo.push(event.key);
-            });
+            this.input.gamepad.on('down', this.gamepadListener);
         }
 
-        this.input.keyboard.on('keydown', (event) =>{
-            console.log('Any key pressed: ', event.key);
-            this.comboDelta = 0;
-            //this.currentCombo.push(event.key);
-            this.currentCombo += event.key;
-            console.log("Current Combo: ", this.currentCombo);
-            console.log("ComboDelta: ", this.comboDelta);
-        });
+        this.keyObjects.left.on('down', this.keyboardListener);
 
-/*
-        this.input.gamepad.once('down', function (pad, button, index)
-        {
-
-            text.setText(`Playing with ${pad.id}`);
-
-            this.gamepad = pad;
-
-        }, this);
-        */
+        for (var i = 0; i < this.keyObjects.length; i++){
+            //this.keyObjects[i].on('down', this.keyboardListener);
+        }
     }
 
     update(time, delta) {
@@ -105,7 +108,9 @@ export class Start extends Phaser.Scene {
             this.currentCombo = "";
         }
 
-        // This is where the combo detection would go
+        if(comboSet.has(this.currentCombo)){
+            console.log(comboSet.get(this.currentCombo))
+        }
 
         this.comboDelta += delta;
 
