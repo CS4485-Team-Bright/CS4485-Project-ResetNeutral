@@ -14,9 +14,6 @@ This is a simple Flask backend that exposes the data via a REST API.
 The data is (in-memory) cached for 1 hour to reduce the load on the server.
 We plan to have user caching as well (TanStack Query is my suggestion).
 
-TO-BE-DONE: Currently, the data is no longer taking in too much information 
-from the FAT repo. However, work on universalDataPoints still needs to be accomplished.
-
 ### Setup
 
 ```bash
