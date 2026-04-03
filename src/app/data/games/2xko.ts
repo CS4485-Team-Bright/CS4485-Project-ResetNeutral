@@ -10,6 +10,7 @@ export const twoXKO: Game = {
   developer: "Riot Games",
   color: "#8b5cf6",
   accentColor: "#06b6d4",
+  logo:"https://cdn.playersupport.riotgames.com/support-site/images/2xko/banner.png",
   characters: [
     {
       id: "jinx",

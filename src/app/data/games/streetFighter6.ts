@@ -10,6 +10,7 @@ export const streetFighter6: Game = {
   developer: "Capcom",
   color: "#dc2626",
   accentColor: "#fbbf24",
+  logo:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRuYhkxb_GGw-AJJSCndYBa641qNsAAC8DZfA&s",
   characters: [
     {
       id: "ryu",
