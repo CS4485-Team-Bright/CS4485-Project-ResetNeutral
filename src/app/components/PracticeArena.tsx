@@ -1,53 +1,6 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type { Character, Move } from "../data/gameData";
-import { Trash2, RotateCcw, Check, X } from "lucide-react";
-
-/** First variant before "or", strip notes like (charged), j., charge brackets → digits */
-function parseMoveInputToTokens(raw: string): string[] {
-  let s = raw.split(/\s+or\s+/i)[0].trim();
-  s = s.replace(/\s*\([^)]*\)\s*/g, "").trim();
-  s = s.replace(/^j\./i, "");
-  s = s.replace(/\[(\d)\]/g, "$1");
-  s = s.replace(/\s/g, "");
-  const tokens: string[] = [];
-  for (const ch of s) {
-    if (/[1-9]/.test(ch)) tokens.push(ch);
-    else if (/[pkshlm]/i.test(ch)) tokens.push(ch.toUpperCase());
-  }
-  return tokens;
-}
-
-function baseArrowToNumpad(sym: string): string {
-  const m: Record<string, string> = { "↓": "2", "↑": "8", "←": "4", "→": "6" };
-  return m[sym] ?? sym;
-}
-
-/** Map cardinal pairs to diagonals so QCF works as ↓,→,→ without a ↘ key */
-function arrowPairToNumpad(prevSym: string | undefined, sym: string): string {
-  const diagonals: Record<string, Record<string, string>> = {
-    "↓": { "→": "3", "←": "1" },
-    "↑": { "→": "9", "←": "7" },
-    "←": { "↓": "1", "↑": "7" },
-    "→": { "↓": "3", "↑": "9" },
-  };
-  if (prevSym && diagonals[prevSym]?.[sym]) return diagonals[prevSym][sym];
-  return baseArrowToNumpad(sym);
-}
-
-function tokenDisplayLabel(t: string): string {
-  const n: Record<string, string> = {
-    "1": "↙",
-    "2": "↓",
-    "3": "↘",
-    "4": "←",
-    "5": "●",
-    "6": "→",
-    "7": "↖",
-    "8": "↑",
-    "9": "↗",
-  };
-  return n[t] ?? t;
-}
+import { Trash2, RotateCcw } from "lucide-react";
 
 const KEY_TO_DIRECTION: Record<string, string> = {
   ArrowDown: "↓",
@@ -106,107 +59,25 @@ export function PracticeArena({
   facing = "right",
 }: PracticeArenaProps) {
   const [inputHistory, setInputHistory] = useState<
-    { symbol: string; type: "direction" | "button"; timestamp: number; seq: number }[]
+    { symbol: string; type: "direction" | "button"; timestamp: number }[]
   >([]);
-  const inputSeqRef = useRef(0);
-  const lastProcessedSeqRef = useRef(0);
   const [recentMotion, setRecentMotion] = useState<string>("");
   const [matchedMove, setMatchedMove] = useState<Move | null>(null);
   const [activeKeys, setActiveKeys] = useState<Set<string>>(new Set());
   const [isActive, setIsActive] = useState(false);
   const arenaRef = useRef<HTMLDivElement>(null);
 
-  const [practiceMove, setPracticeMove] = useState<Move | null>(null);
-  type StepState = "pending" | "success" | "fail";
-  const [practiceStepStatus, setPracticeStepStatus] = useState<StepState[]>(
-    []
-  );
-  const practiceIndexRef = useRef(0);
-  const practiceTokensRef = useRef<string[]>([]);
-
-  const practiceTokens = useMemo(
-    () => (practiceMove ? parseMoveInputToTokens(practiceMove.input) : []),
-    [practiceMove]
-  );
-
-  useEffect(() => {
-    practiceTokensRef.current = practiceTokens;
-  }, [practiceTokens]);
-
-  useEffect(() => {
-    practiceIndexRef.current = 0;
-    lastProcessedSeqRef.current = 0;
-    if (practiceMove && practiceTokens.length > 0) {
-      setPracticeStepStatus(practiceTokens.map(() => "pending"));
-    } else {
-      setPracticeStepStatus([]);
-    }
-  }, [practiceMove, practiceTokens]);
-
   const addInput = useCallback(
     (symbol: string, type: "direction" | "button") => {
       const now = Date.now();
-      inputSeqRef.current += 1;
-      const seq = inputSeqRef.current;
       setInputHistory((prev) => {
-        const newHistory = [...prev, { symbol, type, timestamp: now, seq }];
+        const newHistory = [...prev, { symbol, type, timestamp: now }];
+        // Keep last 30 inputs
         return newHistory.slice(-30);
       });
     },
     []
   );
-
-  useEffect(() => {
-    if (!practiceMove || practiceTokens.length === 0 || inputHistory.length === 0)
-      return;
-    const last = inputHistory[inputHistory.length - 1];
-    if (last.seq === lastProcessedSeqRef.current) return;
-    lastProcessedSeqRef.current = last.seq;
-
-    const prevDir = [...inputHistory]
-      .slice(0, -1)
-      .reverse()
-      .find((e) => e.type === "direction");
-    const got =
-      last.type === "direction"
-        ? arrowPairToNumpad(prevDir?.symbol, last.symbol)
-        : last.symbol.toUpperCase();
-
-    const idx = practiceIndexRef.current;
-    if (idx >= practiceTokens.length) return;
-    const expected = practiceTokens[idx];
-
-    if (got === expected) {
-      setPracticeStepStatus((prev) => {
-        const next = [...prev];
-        if (next[idx] !== undefined) next[idx] = "success";
-        return next;
-      });
-      practiceIndexRef.current = idx + 1;
-      if (practiceIndexRef.current >= practiceTokens.length) {
-        window.setTimeout(() => {
-          practiceIndexRef.current = 0;
-          const tokens = practiceTokensRef.current;
-          if (tokens.length > 0) {
-            setPracticeStepStatus(tokens.map(() => "pending"));
-          }
-        }, 1000);
-      }
-    } else {
-      setPracticeStepStatus((prev) => {
-        const next = [...prev];
-        if (next[idx] !== undefined) next[idx] = "fail";
-        return next;
-      });
-      window.setTimeout(() => {
-        practiceIndexRef.current = 0;
-        const tokens = practiceTokensRef.current;
-        if (tokens.length > 0) {
-          setPracticeStepStatus(tokens.map(() => "pending"));
-        }
-      }, 700);
-    }
-  }, [inputHistory, practiceMove, practiceTokens]);
 
   // Check for motion patterns
   useEffect(() => {
@@ -312,14 +183,6 @@ export function PracticeArena({
     setInputHistory([]);
     setRecentMotion("");
     setMatchedMove(null);
-    lastProcessedSeqRef.current = 0;
-    practiceIndexRef.current = 0;
-    if (practiceMove) {
-      const t = parseMoveInputToTokens(practiceMove.input);
-      if (t.length > 0) {
-        setPracticeStepStatus(t.map(() => "pending"));
-      }
-    }
   };
 
   const recentDisplay = inputHistory.slice(-15);
@@ -486,131 +349,23 @@ export function PracticeArena({
           </>
         )}
 
-        {/* Move list + practice selection */}
+        {/* Move list reference */}
         <div className="mt-6">
-          <h4 className="text-slate-300 mb-1">
-            Move list
+          <h4 className="text-slate-300 mb-3">
+            Move List - Try these inputs:
           </h4>
-          <p className="text-slate-500 text-sm mb-3">
-            Click a move to practice. Each input step lights up{" "}
-            <span className="text-emerald-400 font-medium">green</span> when
-            correct and{" "}
-            <span className="text-red-400 font-medium">red</span> on a mistake
-            (then the sequence resets).
-          </p>
-
-          {practiceMove && practiceTokens.length > 0 && (
-            <div className="mb-4 rounded-lg border border-blue-500/30 bg-[#0a1628] p-4 shadow-inner">
-              <p className="text-slate-400 text-sm mb-1">
-                Practicing:{" "}
-                <span className="text-white font-semibold">
-                  {practiceMove.name}
-                </span>
-                <span className="text-slate-500 font-mono text-xs ml-2">
-                  {practiceMove.input}
-                </span>
-              </p>
-              <p className="text-slate-500 text-xs mb-3">
-                Activate the arena above, then enter directions and buttons in
-                order. The highlighted ring shows the next step.
-              </p>
-              <div className="flex flex-wrap items-center gap-2">
-                {practiceTokens.map((t, i) => {
-                  const st = practiceStepStatus[i] ?? "pending";
-                  const isNext =
-                    st === "pending" &&
-                    practiceTokens.slice(0, i).every(
-                      (_, j) => practiceStepStatus[j] === "success"
-                    );
-                  const chip =
-                    st === "success"
-                      ? "border-2 border-emerald-400 bg-emerald-500/20 text-emerald-100 shadow-[0_0_12px_rgba(52,211,153,0.35)]"
-                      : st === "fail"
-                        ? "border-2 border-red-500 bg-red-500/25 text-red-100 shadow-[0_0_12px_rgba(239,68,68,0.35)]"
-                        : isNext
-                          ? "border-2 border-amber-400/80 bg-slate-800/80 text-slate-100 ring-2 ring-amber-500/40"
-                          : "border border-slate-600 bg-slate-800/60 text-slate-400";
-                  return (
-                    <div
-                      key={`${t}-${i}`}
-                      className={`flex min-h-[2.5rem] min-w-[2.5rem] items-center justify-center gap-1 rounded-lg px-2.5 py-2 text-sm font-mono transition-all ${chip}`}
-                      title={
-                        st === "success"
-                          ? "Correct"
-                          : st === "fail"
-                            ? "Wrong input"
-                            : isNext
-                              ? "Next: enter this"
-                              : "Pending"
-                      }
-                    >
-                      {st === "success" && (
-                        <Check
-                          className="size-4 shrink-0 text-emerald-300"
-                          strokeWidth={2.5}
-                          aria-hidden
-                        />
-                      )}
-                      {st === "fail" && (
-                        <X
-                          className="size-4 shrink-0 text-red-300"
-                          strokeWidth={2.5}
-                          aria-hidden
-                        />
-                      )}
-                      <span>{tokenDisplayLabel(t)}</span>
-                    </div>
-                  );
-                })}
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setPracticeMove(null);
-                  setInputHistory([]);
-                  lastProcessedSeqRef.current = 0;
-                }}
-                className="mt-3 text-xs text-slate-500 hover:text-slate-300 underline-offset-2 hover:underline"
-              >
-                Clear selection
-              </button>
-            </div>
-          )}
-
-          {practiceMove && practiceTokens.length === 0 && (
-            <p className="text-amber-400/90 text-sm mb-3">
-              This move&apos;s notation couldn&apos;t be parsed into steps.
-              Choose another move.
-            </p>
-          )}
-
           <div className="space-y-2">
-            {character.moves.map((move, moveIdx) => {
-              const selected = practiceMove?.name === move.name;
-              return (
-                <button
-                  type="button"
-                  key={`${move.name}-${moveIdx}`}
-                  onClick={() => {
-                    setPracticeMove(move);
-                    setInputHistory([]);
-                    lastProcessedSeqRef.current = 0;
-                  }}
-                  className={`flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d1f35] ${
-                    selected
-                      ? "bg-blue-600/30 ring-2 ring-blue-400/70 shadow-md"
-                      : "bg-slate-800/50 hover:bg-slate-700/60 active:bg-slate-700/80"
-                  }`}
-                >
-                  <span className="text-white text-sm font-medium">
-                    {move.name}
-                  </span>
-                  <span className="text-blue-300 text-sm font-mono shrink-0">
-                    {move.input}
-                  </span>
-                </button>
-              );
-            })}
+            {character.moves.slice(0, 4).map((move) => (
+              <div
+                key={move.name}
+                className="flex items-center justify-between bg-slate-800/50 rounded-lg px-3 py-2"
+              >
+                <span className="text-white text-sm">{move.name}</span>
+                <span className="text-blue-300 text-sm font-mono">
+                  {move.input}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
