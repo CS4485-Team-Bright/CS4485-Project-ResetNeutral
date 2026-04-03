@@ -1,6 +1,6 @@
 import { useParams, Link, Navigate } from "react-router";
 import { getGame } from "../data/gameData";
-import { ChevronRight, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 const GAME_GRADIENTS: Record<string, string> = {
   "guilty-gear-strive": "from-red-600/20 to-yellow-600/10",
@@ -42,75 +42,47 @@ export function GamePage() {
 
       {/* Characters */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
-        <h2 className="text-white mb-6">Characters</h2>
+        <h2 className="text-white mb-6 text-center text-5xl font-medium">Characters</h2>
 
-        <div className="grid gap-4">
+        <div className="flex flex-wrap justify-center gap-4">
           {game.characters.map((character) => (
             <Link
               key={character.id}
               to={`/game/${game.id}/character/${character.id}`}
-              className="group bg-[#111d33] border border-blue-500/15 rounded-xl p-5 hover:border-blue-400/30 transition-all flex items-center gap-4"
+              className="group relative w-[120px] h-[120px] rounded-2xl overflow-hidden flex-shrink-0 transition-all duration-200 hover:scale-105 hover:shadow-lg"
+              style={{
+                boxShadow: "0px 4px 4px 1px rgba(0,0,0,0.25)",
+              }}
+              title={character.name}
             >
-              <div
-                className="w-14 h-14 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xl"
-                style={{ backgroundColor: character.color + "30", borderColor: character.color + "60", borderWidth: 2 }}
-              >
-                {character.image ? (
+              {/* Portrait image or fallback */}
+              {character.image ? (
+                <img
+                  src={character.image}
+                  alt={character.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
                 <div
-                    className="w-16 h-16 rounded-2xl overflow-hidden flex items-center justify-center flex-shrink-0 border-2"
-                    style={{
-                      borderColor: character.color + "50",
-                    }}
-                  >
-                    <img
-                      src={character.image}
-                      alt={character.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ) : (
-                  <div
-                    className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 border-2"
-                    style={{
-                      backgroundColor: character.color + "20",
-                      borderColor: character.color + "50",
-                    }}
-                  >
-                    <div className="text-center px-4">
-                      <div className="text-blue-500/30 text-3xl mb-1">🥋</div>
-                      <p className="text-slate-500 text-xs">Character portrait</p>
-                    </div>
-                  </div>
-                )}
+                  className="w-full h-full flex items-center justify-center"
+                  style={{
+                    backgroundColor: character.color + "30",
+                    borderColor: character.color + "60",
+                  }}
+                >
+                  <span className="text-3xl">🥋</span>
                 </div>
+              )}
 
-              <div className="flex-1 min-w-0">
-                <h3 className="text-white">{character.name}</h3>
-                <p className="text-slate-400 text-sm truncate">
-                  {character.title}
-                </p>
-                <div className="flex items-center gap-3 mt-1">
-                  <span className="text-xs text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded">
-                    {character.archetype}
-                  </span>
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded ${
-                      character.difficulty === "Easy"
-                        ? "text-green-400 bg-green-500/10"
-                        : character.difficulty === "Medium"
-                        ? "text-yellow-400 bg-yellow-500/10"
-                        : "text-red-400 bg-red-500/10"
-                    }`}
-                  >
-                    {character.difficulty}
-                  </span>
-                </div>
+              {/* Name bar on hover */}
+              <div
+                className="absolute top-0 left-0 right-0 py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                style={{ backgroundColor: "#550F0F" }}
+              >
+                <span className="text-white text-[15px] font-semibold text-center block truncate">
+                  {character.name}
+                </span>
               </div>
-
-              <ChevronRight
-                size={20}
-                className="text-slate-500 group-hover:text-blue-400 transition-colors flex-shrink-0"
-              />
             </Link>
           ))}
         </div>
