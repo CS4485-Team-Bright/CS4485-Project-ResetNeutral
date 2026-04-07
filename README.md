@@ -37,7 +37,6 @@ ResetNeutral is a free, web-based platform for anyone looking to get into fighti
 - Discoverable learning paths: Home → General / Games → Character → Combos
 - In-browser Training Ground with keystroke capture, combo recognition, and timing feedback (<200ms input latency target)
 - Admin dashboard for content management (games, characters, combos)
-- AI-assisted character summaries (Phase 3)
 
 ---
 
@@ -84,30 +83,7 @@ easycombo/
 │               └── admin.js
 └── backend/
     ├── app/
-    │   ├── __init__.py
-    │   ├── config.py
-    │   ├── models.py
-    │   ├── api/
-    │   │   ├── games.py
-    │   │   ├── characters.py
-    │   │   ├── training.py
-    │   │   └── admin.py
-    │   ├── services/
-    │   │   ├── games_service.py
-    │   │   ├── characters_service.py
-    │   │   ├── training_service.py
-    │   │   └── admin_service.py
-    │   └── utils/
-    │       ├── db.py
-    │       ├── logger.py
-    │       └── errors.py
-    ├── tests/
-    │   ├── test_games_api.py
-    │   ├── test_characters_api.py
-    │   ├── test_training_api.py
-    │   └── test_admin_api.py
-    ├── scripts/
-    │   └── seed_data.py
+    │   │── datascraper.py
     ├── .env.example
     ├── requirements.txt
     └── README.md
@@ -141,7 +117,7 @@ Open `frontend/public/index.html` directly in a browser, or serve with any stati
 npx serve frontend/public
 ```
 
-Set `VITE_API_BASE_URL` (or equivalent) to point at your running Flask backend.
+Set `GITHUB_RAW_BASE_URL` (or equivalent) to point at your running Flask backend.
 
 ### Seed Data
 
@@ -165,20 +141,17 @@ Copy `.env.example` and fill in all values. The backend will **fail fast** at st
 
 | Variable | Description |
 |---|---|
-| `DB_URL` / `FIREBASE_PROJECT_ID` / `SUPABASE_URL` | Primary data store connection |
+| `SUPABASE_URL` / `SUPABASE_API_KEY` | Primary data store connection |
 | `ADMIN_JWT_SECRET` | Secret for admin auth tokens |
 | `PORT` | Flask listen port |
 | `FRONTEND_URL` | Allowed CORS origin |
 | `NODE_ENV` | `development` \| `staging` \| `production` |
-| `AI_PROVIDER_KEY` | Key for AI summary provider (Phase 3) |
 
 **Frontend**
 
 | Variable | Description |
 |---|---|
-| `VITE_API_BASE_URL` | Base URL for the Flask backend |
-
-> **Security:** Never hardcode secrets. AI provider keys must never appear in frontend code or browser network requests.
+| `GITHUB_RAW_BASE_URL` | Base URL for the Flask backend |
 
 ---
 
@@ -209,12 +182,6 @@ All responses are JSON. Public read endpoints require no auth. Admin/write endpo
 | GET | `/games/{gameId}/characters/{characterId}/{resource}` | Resource subtypes (e.g. combo categories) |
 | GET | `/games/{gameId}/characters/{characterId}/{resource}/{type}` | Detailed data for a resource type |
 
-### Training (Phase 2+)
-
-| Method | Route | Description |
-|---|---|---|
-| POST | `/training/validate` | Validate an input sequence against a target combo |
-
 ### Admin
 
 | Method | Routes | Description |
@@ -222,13 +189,6 @@ All responses are JSON. Public read endpoints require no auth. Admin/write endpo
 | POST/PATCH/DELETE | `/admin/games`, `/admin/games/{gameId}` | Manage games |
 | POST/PATCH/DELETE | `/admin/games/{gameId}/characters/...` | Manage characters |
 | POST/PATCH/DELETE | `/admin/combos`, `/admin/combos/{comboId}` | Manage combos |
-
-### AI (Phase 3)
-
-| Method | Route | Description |
-|---|---|---|
-| POST | `/ai/character-summary` | Generate/retrieve a cached AI character summary |
-| POST | `/ai/combos/upload` | Submit a community combo (pending review) |
 
 ### Error Format
 
@@ -254,8 +214,6 @@ Standard codes: `400` validation, `401` unauthorized, `403` forbidden, `404` not
 | 3 — MVP Dev | Navigable wiki, Training Ground with basic combo detection | 2/27 – 4/17 |
 | 4 — Testing & Beta | Integration tests, QA report, expanded content | 4/17 – 4/24 |
 | 5 — Deploy & Handover | Production AWS deploy, final demo, tagged GitHub release | 4/24 – 5/1 |
-
-**Phase gates:** do not advance to the next phase until all requirements for the current phase pass manual and automated testing.
 
 ---
 

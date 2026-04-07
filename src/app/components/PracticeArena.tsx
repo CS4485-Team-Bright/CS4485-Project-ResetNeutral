@@ -124,15 +124,40 @@ export function PracticeArena({
 
       setActiveKeys((prev) => new Set(prev).add(key));
 
+      // Check for diagonal inputs first
+      const currentKeys = new Set(activeKeys);
+      currentKeys.add(key);
+
       // Flip left/right if facing left
-      let mappedKey = key;
-      if (facing === "left") {
-        if (key === "ArrowLeft" || key === "a") mappedKey = key === "ArrowLeft" ? "ArrowRight" : "d";
-        else if (key === "ArrowRight" || key === "d") mappedKey = key === "ArrowRight" ? "ArrowLeft" : "a";
+      const flipKey = (k: string) => {
+        if (facing === "left") {
+          if (k === "ArrowLeft" || k === "a") return k === "ArrowLeft" ? "ArrowRight" : "d";
+          else if (k === "ArrowRight" || k === "d") return k === "ArrowRight" ? "ArrowLeft" : "a";
+        }
+        return k;
+      };
+
+      // Check for diagonal combinations
+      const hasDown = currentKeys.has("ArrowDown") || currentKeys.has("s");
+      const hasUp = currentKeys.has("ArrowUp") || currentKeys.has("w");
+      const hasLeft = currentKeys.has("ArrowLeft") || currentKeys.has("a");
+      const hasRight = currentKeys.has("ArrowRight") || currentKeys.has("d");
+
+      let diagonal: string | null = null;
+      if (hasDown && hasRight) {
+        diagonal = facing === "left" ? "↙" : "↘";
+      } else if (hasDown && hasLeft) {
+        diagonal = facing === "left" ? "↘" : "↙";
+      } else if (hasUp && hasRight) {
+        diagonal = facing === "left" ? "↖" : "↗";
+      } else if (hasUp && hasLeft) {
+        diagonal = facing === "left" ? "↗" : "↖";
       }
 
-      if (KEY_TO_DIRECTION[mappedKey]) {
-        addInput(KEY_TO_DIRECTION[mappedKey], "direction");
+      if (diagonal) {
+        addInput(diagonal, "direction");
+      } else if (KEY_TO_DIRECTION[flipKey(key)]) {
+        addInput(KEY_TO_DIRECTION[flipKey(key)], "direction");
       } else if (KEY_TO_BUTTON[key]) {
         addInput(KEY_TO_BUTTON[key], "button");
       }
@@ -220,10 +245,21 @@ export function PracticeArena({
                 <div className="grid grid-cols-3 gap-1 w-fit">
                   {["↖", "↑", "↗", "←", "●", "→", "↙", "↓", "↘"].map(
                     (dir) => {
-                      const isPressed = [...activeKeys].some((key) => {
-                        const mapped = KEY_TO_DIRECTION[key];
-                        return mapped === dir;
-                      });
+                      const hasDown = activeKeys.has("ArrowDown") || activeKeys.has("s");
+                      const hasUp = activeKeys.has("ArrowUp") || activeKeys.has("w");
+                      const hasLeft = activeKeys.has("ArrowLeft") || activeKeys.has("a");
+                      const hasRight = activeKeys.has("ArrowRight") || activeKeys.has("d");
+
+                      let isPressed = false;
+                      if (dir === "↖") isPressed = hasUp && hasLeft;
+                      else if (dir === "↑") isPressed = hasUp && !hasLeft && !hasRight;
+                      else if (dir === "↗") isPressed = hasUp && hasRight;
+                      else if (dir === "←") isPressed = hasLeft && !hasUp && !hasDown;
+                      else if (dir === "→") isPressed = hasRight && !hasUp && !hasDown;
+                      else if (dir === "↙") isPressed = hasDown && hasLeft;
+                      else if (dir === "↓") isPressed = hasDown && !hasLeft && !hasRight;
+                      else if (dir === "↘") isPressed = hasDown && hasRight;
+
                       return (
                         <div
                           key={dir}

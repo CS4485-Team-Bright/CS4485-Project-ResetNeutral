@@ -77,10 +77,30 @@ export function HomePage() {
               <Link
                 key={game.id}
                 to={`/game/${game.id}`}
-                className={`group relative bg-gradient-to-br ${GAME_COLORS[game.id]} border border-blue-500/20 rounded-xl px-6 py-4 hover:border-blue-400/40 transition-all hover:scale-105`}
+                className={`group relative bg-gradient-to-br ${GAME_COLORS[game.id]} border border-blue-500/20 rounded-xl overflow-hidden hover:border-blue-400/40 transition-all hover:scale-105 w-64`}
               >
-                <span className="text-white text-lg">{game.shortName}</span>
-                <p className="text-slate-400 text-sm">{game.name}</p>
+                <div className="relative h-40 overflow-hidden">
+                  <div className="" />
+                  <ImageWithFallback
+                    src={game.logo}
+                    alt={game.name}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 z-20 flex items-center justify-center">
+                    <span
+                      className="text-4xl font-black text-white tracking-tighter"
+                      style={{
+                        textShadow: '0 0 20px rgba(0, 0, 0, 0.8), 0 0 40px rgba(0, 0, 0, 0.6)',
+                        fontFamily: "'Orbitron', sans-serif"
+                      }}
+                    >
+                      {/* {game.shortName} */}
+                    </span>
+                  </div>
+                </div>
+                <div className="px-4 py-3 bg-slate-900/80 backdrop-blur-sm">
+                  <p className="text-slate-300 text-sm text-center">{game.name}</p>
+                </div>
               </Link>
             ))}
           </div>
@@ -219,7 +239,7 @@ export function HomePage() {
               className="text-xl text-white"
               style={{ fontFamily: "'UnifrakturMaguntia', cursive" }}
             >
-              Reset Neutral
+              Easy Combo
             </span>
             <div className="flex gap-6 text-sm text-slate-400">
               <Link to="/games" className="hover:text-white transition-colors">

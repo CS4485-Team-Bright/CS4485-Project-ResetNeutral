@@ -35,16 +35,34 @@ export function CharacterPage() {
           </div>
 
           <div className="flex flex-col md:flex-row items-start gap-6">
-            <div
-              className="w-20 h-20 rounded-full flex items-center justify-center text-white text-3xl flex-shrink-0"
-              style={{
-                backgroundColor: character.color + "20",
-                borderColor: character.color + "50",
-                borderWidth: 2,
-              }}
-            >
-              {character.name[0]}
-            </div>
+            {/* Character Image/Avatar */}
+            {character.image ? (
+              <div
+                className="w-32 h-32 rounded-2xl overflow-hidden flex items-center justify-center flex-shrink-0 border-2"
+                style={{
+                  borderColor: character.color + "50",
+                }}
+              >
+                <img
+                  src={character.image}
+                  alt={character.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ) : (
+              <div
+                className="w-32 h-32 rounded-2xl flex items-center justify-center flex-shrink-0 border-2"
+                style={{
+                  backgroundColor: character.color + "20",
+                  borderColor: character.color + "50",
+                }}
+              >
+                <div className="text-center px-4">
+                  <div className="text-blue-500/30 text-3xl mb-1">🥋</div>
+                  <p className="text-slate-500 text-xs">Character portrait</p>
+                </div>
+              </div>
+            )}
 
             <div className="flex-1">
               <p className="text-blue-400 text-sm">
@@ -97,6 +115,29 @@ export function CharacterPage() {
                       </div>
                       <InputDisplay input={move.input} size="sm" />
                     </div>
+
+                    {/* GIF Display */}
+                    {move.gif && (
+                      <div className="mt-3 mb-3 rounded-lg overflow-hidden border border-blue-500/20 bg-[#0a1628]">
+                        <img
+                          src={move.gif}
+                          alt={`${move.name} demonstration`}
+                          className="w-full h-auto"
+                        />
+                      </div>
+                    )}
+
+                    {/* Placeholder for when no GIF is provided */}
+                    {!move.gif && (
+                      <div className="mt-3 mb-3 rounded-lg overflow-hidden border border-blue-500/20 bg-[#0a1628] aspect-video flex items-center justify-center">
+                        <div className="text-center px-4">
+                          <div className="text-blue-500/30 text-4xl mb-2">🎬</div>
+                          <p className="text-slate-500 text-sm">Move demonstration GIF</p>
+                          <p className="text-slate-600 text-xs mt-1">Coming soon</p>
+                        </div>
+                      </div>
+                    )}
+
                     <p className="text-slate-400 text-sm mt-2">
                       {move.description}
                     </p>
@@ -149,41 +190,44 @@ export function CharacterPage() {
 
           {/* Right Column: Practice Arena */}
           <div className="space-y-4">
-            <div className="flex items-center gap-3 mb-2">
-              <h2 className="text-white">Practice Arena</h2>
-              <div className="flex rounded-lg overflow-hidden border border-blue-500/20">
-                <button
-                  onClick={() => setFacing("right")}
-                  className={`px-3 py-1 text-sm transition-colors ${
-                    facing === "right"
-                      ? "bg-blue-600 text-white"
-                      : "bg-slate-800 text-slate-400 hover:text-white"
-                  }`}
-                >
-                  → Right
-                </button>
-                <button
-                  onClick={() => setFacing("left")}
-                  className={`px-3 py-1 text-sm transition-colors ${
-                    facing === "left"
-                      ? "bg-blue-600 text-white"
-                      : "bg-slate-800 text-slate-400 hover:text-white"
-                  }`}
-                >
-                  ← Left
-                </button>
+            {/* Sticky container */}
+            <div className="sticky top-20">
+              <div className="flex items-center gap-3 mb-2">
+                <h2 className="text-white">Practice Arena</h2>
+                <div className="flex rounded-lg overflow-hidden border border-blue-500/20">
+                  <button
+                    onClick={() => setFacing("right")}
+                    className={`px-3 py-1 text-sm transition-colors ${
+                      facing === "right"
+                        ? "bg-blue-600 text-white"
+                        : "bg-slate-800 text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    → Right
+                  </button>
+                  <button
+                    onClick={() => setFacing("left")}
+                    className={`px-3 py-1 text-sm transition-colors ${
+                      facing === "left"
+                        ? "bg-blue-600 text-white"
+                        : "bg-slate-800 text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    ← Left
+                  </button>
+                </div>
               </div>
-            </div>
-            <PracticeArena character={character} facing={facing} />
+              <PracticeArena character={character} facing={facing} />
 
-            {/* Back Link */}
-            <Link
-              to={`/game/${game.id}`}
-              className="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors mt-4"
-            >
-              <ArrowLeft size={16} />
-              Back to {game.shortName} Characters
-            </Link>
+              {/* Back Link */}
+              <Link
+                to={`/game/${game.id}`}
+                className="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors mt-4"
+              >
+                <ArrowLeft size={16} />
+                Back to {game.shortName} Characters
+              </Link>
+            </div>
           </div>
         </div>
       </div>
