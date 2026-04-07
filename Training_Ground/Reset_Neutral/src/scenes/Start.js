@@ -1,3 +1,7 @@
+//import { comboSet } from "../../combos/combos";
+
+const comboSet = new Map();
+
 export class Start extends Phaser.Scene {
 
     gamepad;
@@ -36,6 +40,23 @@ export class Start extends Phaser.Scene {
         this.load.image('base', 'assets/Default.png');
     }
 
+    keyboardListener(event){
+        console.log('Key pressed: ', this);
+        this.comboDelta = 0;
+        //this.currentCombo.push(event.key);
+        this.currentCombo += this.keyCode;
+        console.log("Current Combo: ", this.currentCombo);
+        console.log("ComboDelta: ", this.comboDelta);
+    }
+
+    gamepadListener(gamepad, button, value){
+        //console.log('Gamepad: ', gamepad);
+        console.log('Button: ', button);
+        //console.log('Value: ', value);
+
+        //Switch statement on 
+    }
+
     create() {
         //this.background = this.add.image(640, 360, 'background');
 
@@ -43,7 +64,7 @@ export class Start extends Phaser.Scene {
         this.cursors = this.input.keyboard.createCursorKeys();
 
         this.comboDelta = 0;
-        this.currentCombo = [];
+        this.currentCombo = "";
 
         this.keyObjects = this.input.keyboard.addKeys({
             up: "W",
@@ -64,20 +85,19 @@ export class Start extends Phaser.Scene {
         // Setup Gamepad controls
         const text = this.add.text(10, 10, 'Press a button on the Gamepad to use', { font: '16px Courier', fill: '#00ff00' });
 
-        this.sprite = this.add.image(640, 360, 'base');
+        //this.sprite = this.add.image(640, 360, 'base');
 
-        this.gamepad = scene.input.gamepad.getAll();
+        this.gamepad = this.input.gamepad.getAll();
 
-/*
-        this.input.gamepad.once('down', function (pad, button, index)
-        {
+        if(this.gamepad){
+            this.input.gamepad.on('down', this.gamepadListener);
+        }
 
-            text.setText(`Playing with ${pad.id}`);
+        this.keyObjects.left.on('down', this.keyboardListener);
 
-            this.gamepad = pad;
-
-        }, this);
-        */
+        for (var i = 0; i < this.keyObjects.length; i++){
+            //this.keyObjects[i].on('down', this.keyboardListener);
+        }
     }
 
     update(time, delta) {
@@ -85,12 +105,19 @@ export class Start extends Phaser.Scene {
         // Delta time in ms
         if (this.comboDelta > 500) {
             this.comboDelta = 0;
-            this.currentCombo = [];
+            this.currentCombo = "";
         }
+
+        if(comboSet.has(this.currentCombo)){
+            console.log(comboSet.get(this.currentCombo))
+        }
+
+        this.comboDelta += delta;
+
+        /*
         // Gamepad Controls
         if (this.gamepad)
         {
-            // this.gamepad.on ('down', function (gamepad, button, value) {});
             // Directional Input using D-Pad
             if (this.gamepad.left)
             {
@@ -182,9 +209,10 @@ export class Start extends Phaser.Scene {
                 // SF6 - Heavy Kick
             }
         }
+        */
 
+        /*
         // Handle keyboard input
-        // this.keyObjects.on('down', function (event) { });
         if (this.keyObjects.left.isDown) {
             // Highlight Key
             this.sprite.setTexture('LEFT_Arrow');
@@ -262,10 +290,7 @@ export class Start extends Phaser.Scene {
             this.comboDelta = 0;
             this.currentCombo.push('lt');
         }
-
-        // This is where the combo detection would go
-
-        this.comboDelta += delta;
+        */
     }
 
 }
