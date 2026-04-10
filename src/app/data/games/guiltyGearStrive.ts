@@ -11,6 +11,7 @@ export const guiltyGearStrive: Game = {
   color: "#dc2626",
   accentColor: "#fbbf24",
   logo:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQbybZM_J9IWsCRfVQrJy-dsbCQYl0Ad01rKw&s",
+  banner:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQZO9R27ljlk1gYNOEWZHJClR7mdII44ooWsg&s",
   characters: [
     {
       id: "sol-badguy",

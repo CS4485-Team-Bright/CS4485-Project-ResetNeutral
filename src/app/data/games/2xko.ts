@@ -11,6 +11,7 @@ export const twoXKO: Game = {
   color: "#8b5cf6",
   accentColor: "#06b6d4",
   logo:"https://cdn.playersupport.riotgames.com/support-site/images/2xko/banner.png",
+  banner:"https://www.riotgames.com/darkroom/1440/f89dcd503e2bba01d44f436544c794be:28f157178e4c06b20b13f6c64631bf52/2xko-brvl24-social-3840x2160-desktopwallpaper-duo-ekko-ahri-v001a-1.png",
   characters: [
     {
       id: "jinx",

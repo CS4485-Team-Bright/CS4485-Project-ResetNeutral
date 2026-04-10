@@ -40,6 +40,7 @@ export interface Game {
   color: string;
   accentColor: string;
   logo?: string;
+  banner?: string;
 }
 
 import { guiltyGearStrive } from "./games/guiltyGearStrive";

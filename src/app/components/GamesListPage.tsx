@@ -22,9 +22,22 @@ export function GamesListPage() {
             <Link
               key={game.id}
               to={`/game/${game.id}`}
-              className={`group relative bg-gradient-to-br ${GAME_GRADIENTS[game.id]} bg-[#111d33] border border-blue-500/20 rounded-xl overflow-hidden hover:border-blue-400/40 transition-all hover:scale-[1.02]`}
+              className={`group relative bg-[#111d33] border border-blue-500/20 rounded-xl overflow-hidden hover:border-blue-400/40 transition-all hover:scale-[1.02]`}
             >
-              <div className="p-6">
+              {/* Banner Image Background */}
+              {game.banner && (
+                <div className="absolute inset-0 opacity-15 group-hover:opacity-25 transition-opacity">
+                  <img
+                    src={game.banner}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                  <div className={`absolute inset-0 bg-gradient-to-br ${GAME_GRADIENTS[game.id]}`} />
+                </div>
+              )}
+
+              {/* Content */}
+              <div className="relative p-6">
                 <div className="mb-4">
                   <h2 className="text-white mb-1">{game.name}</h2>
                   <p className="text-slate-400 text-sm">

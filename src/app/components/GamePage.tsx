@@ -17,10 +17,21 @@ export function GamePage() {
   return (
     <div className="min-h-screen">
       {/* Game Header */}
-      <div
-        className={`bg-gradient-to-br ${GAME_GRADIENTS[game.id]} border-b border-blue-500/15`}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+      <div className="relative border-b border-blue-500/15 overflow-hidden">
+        {/* Banner Image Background */}
+        {game.banner && (
+          <div className="absolute inset-0 opacity-20">
+            <img
+              src={game.banner}
+              alt=""
+              className="w-full h-full object-cover"
+            />
+            <div className={`absolute inset-0 bg-gradient-to-br ${GAME_GRADIENTS[game.id]}`} />
+          </div>
+        )}
+
+        {/* Content */}
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
           <Link
             to="/games"
             className="inline-flex items-center gap-1 text-slate-400 hover:text-white text-sm mb-4 transition-colors"

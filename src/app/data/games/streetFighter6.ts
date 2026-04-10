@@ -11,6 +11,7 @@ export const streetFighter6: Game = {
   color: "#dc2626",
   accentColor: "#fbbf24",
   logo:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRuYhkxb_GGw-AJJSCndYBa641qNsAAC8DZfA&s",
+  banner:"https://lh3.googleusercontent.com/proxy/i2jIwZW-6J-5t0ehFF7v1yp42zeb0airr5rneE_IRrGEouY5_JrM97LD36VskJ98RZxANtC1Csf39bRch8FiD0kOAjYbynGb5BaXauiqlMCka95Sdjw2voO9vInd_E_8n8Xl86Sg4IMCbzfE7CNNzvd4NUvH1HPeRiQZkGkuWwrh9M6utg",
   characters: [
     {
       id: "ryu",
