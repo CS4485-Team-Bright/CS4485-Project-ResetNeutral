@@ -1,0 +1,9 @@
+Meeting Minutes:
+
+Discussed database and data scraping
+Discussed new UI on the website, the combo UI, logos for games on the front page, character pages having smaller icons
+
+TODO Make app more scalable, CICD, serverside caching
+TODO Update testing methodology (try to see if the website will hold up with more games or several thousand users)
+TODO Research new deployments to replace netlify
+TODO Integrate frontend and backend
