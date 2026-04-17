@@ -1,13 +1,26 @@
-//import { comboSet } from "../../combos/combos";
+export const comboSet = new Map();
 
-const comboSet = new Map();
+comboSet.set("down_up_", "super jump");
+comboSet.set("right_right_", "side dash");
+comboSet.set("x_y_", "chain dash");
+comboSet.set("left_left_", "side dash");
+comboSet.set("left_x_y_", "side dash");
+comboSet.set("right_x_y_", "side dash");
+comboSet.set("x", "normal");
+comboSet.set("y", "normal");
+comboSet.set("b", "normal");
+comboSet.set("down_b_", "down air");
+comboSet.set("lt_", "special 1");
+comboSet.set("rt_", "special 2");
+comboSet.set("y_b_", "throw");
+comboSet.set("left_y_b_", "air ok");
 
 export class Start extends Phaser.Scene {
 
     gamepad;
     keyObjects;
-    comboDelta;
-    currentCombo;
+    comboDelta = 0;
+    currentCombo = "_";
 
     constructor() {
         super('Start');
@@ -41,20 +54,106 @@ export class Start extends Phaser.Scene {
     }
 
     keyboardListener(event){
-        console.log('Key pressed: ', this);
+        console.log('Key pressed: ', event.key);
+        console.log("ComboDelta: ", this.comboDelta);
         this.comboDelta = 0;
         //this.currentCombo.push(event.key);
-        this.currentCombo += this.keyCode;
+
+        switch(event.key){
+            case "w":
+                this.currentCombo += "up_";
+                break;
+            case "s":
+                this.currentCombo += "down_";
+                break;
+            case "a":
+                this.currentCombo += "left_";
+                break;
+            case "d":
+                this.currentCombo += "right_";
+                break;
+            case "k":
+                this.currentCombo += "a_";
+                break;
+            case "j":
+                this.currentCombo += "x_";
+                break;
+            case "l":
+                this.currentCombo += "b_";
+                break;
+            case "i":
+                this.currentCombo += "y_";
+                break;
+            case " ":
+                this.currentCombo += "rb_";
+                break;
+            case "o":
+                this.currentCombo += "rt_";
+                break;
+            case "m":
+                this.currentCombo += "lb_";
+                break;
+            case "u":
+                this.currentCombo += "lt_";
+                break;
+            default:
+                break;
+        }
+
         console.log("Current Combo: ", this.currentCombo);
-        console.log("ComboDelta: ", this.comboDelta);
     }
 
     gamepadListener(gamepad, button, value){
         //console.log('Gamepad: ', gamepad);
         console.log('Button: ', button);
+        console.log('Button Index: ', button.index);
         //console.log('Value: ', value);
 
-        //Switch statement on 
+        this.comboDelta = 0;
+
+        switch(button.index){
+            case 0:
+                this.currentCombo += "a_";
+                break;
+            case 1:
+                this.currentCombo += "b_";
+                break;
+            case 2:
+                this.currentCombo += "x_";
+                break;
+            case 3:
+                this.currentCombo += "y_";
+                break;
+            case 4:
+                this.currentCombo += "lb_";
+                break;
+            case 5:
+                this.currentCombo += "rb_";
+                break;
+            case 6:
+                this.currentCombo += "lt_";
+                break;
+            case 7:
+                this.currentCombo += "rt_";
+                break;
+            case 12:
+                this.currentCombo += "up_";
+                break;
+            case 13:
+                this.currentCombo += "down_";
+                break;
+            case 14:
+                this.currentCombo += "left_";
+                break;
+            case 15:
+                this.currentCombo += "right_";
+                break;
+            default:
+                break;
+        }
+
+        console.log("Current Combo: ", this.currentCombo);
+        console.log("ComboDelta: ", this.comboDelta);
     }
 
     create() {
@@ -66,22 +165,6 @@ export class Start extends Phaser.Scene {
         this.comboDelta = 0;
         this.currentCombo = "";
 
-        this.keyObjects = this.input.keyboard.addKeys({
-            up: "W",
-            down: "S",
-            left: "A",
-            right: "D",
-            a: "K",
-            x: "J",
-            b: "L",
-            y: "I",
-            rb: "SPACE",
-            rt: "O",
-            lb: "M",
-            lt: "U",
-
-        });
-
         // Setup Gamepad controls
         const text = this.add.text(10, 10, 'Press a button on the Gamepad to use', { font: '16px Courier', fill: '#00ff00' });
 
@@ -90,14 +173,10 @@ export class Start extends Phaser.Scene {
         this.gamepad = this.input.gamepad.getAll();
 
         if(this.gamepad){
-            this.input.gamepad.on('down', this.gamepadListener);
+            this.input.gamepad.on('down', this.gamepadListener, this);
         }
 
-        this.keyObjects.left.on('down', this.keyboardListener);
-
-        for (var i = 0; i < this.keyObjects.length; i++){
-            //this.keyObjects[i].on('down', this.keyboardListener);
-        }
+        this.input.keyboard.on('keydown', this.keyboardListener, this);
     }
 
     update(time, delta) {
@@ -113,184 +192,5 @@ export class Start extends Phaser.Scene {
         }
 
         this.comboDelta += delta;
-
-        /*
-        // Gamepad Controls
-        if (this.gamepad)
-        {
-            // Directional Input using D-Pad
-            if (this.gamepad.left)
-            {
-                this.sprite.setTexture('LEFT_Arrow');
-                this.comboDelta = 0;
-                this.currentCombo.push('left');
-            }
-            if (this.gamepad.right)
-            {
-                this.sprite.setTexture('RIGHT_Arrow');
-                this.comboDelta = 0;
-                this.currentCombo.push('right');
-            }
-            if (this.gamepad.up)
-            {
-                this.sprite.setTexture('UP_Arrow');
-                this.comboDelta = 0;
-                this.currentCombo.push('up');
-            }
-            if (this.gamepad.down)
-            {
-                this.sprite.setTexture('DOWN_Arrow');
-                this.comboDelta = 0;
-                this.currentCombo.push('down');
-            }
-
-            // Button Inputs
-            if (this.gamepad.A)
-            {
-                this.sprite.setTexture('A_Button');
-                this.comboDelta = 0;
-                this.currentCombo.push('a');
-                // 2XKO - Tag
-                // SF6 - Light Kick
-            }
-            if (this.gamepad.Y)
-            {
-                this.sprite.setTexture('Y_Button');
-                this.comboDelta = 0;
-                this.currentCombo.push('y');
-                // 2XKO - Medium Attack
-                // SF6 - Medium Punch
-            }
-            if (this.gamepad.X)
-            {
-                this.sprite.setTexture('X_Button');
-                this.comboDelta = 0;
-                this.currentCombo.push('x');
-                // 2XKO - Light Attack
-                // SF6 - Light Punch
-            }
-            if (this.gamepad.B)
-            {
-                this.sprite.setTexture('B_Button');
-                this.comboDelta = 0;
-                this.currentCombo.push('b');
-                // 2XKO - Heavy Attack
-                // SF6 - Medium Kick
-            }
-
-            // Shoulder Buttons
-            if (this.gamepad.L1)
-            {
-                this.sprite.setTexture('LB_Button');
-                this.comboDelta = 0;
-                this.currentCombo.push('lb');
-                // 2XKO - Special 2
-            }
-            if (this.gamepad.L2)
-            {
-                this.sprite.setTexture('LT_Button');
-                this.comboDelta = 0;
-                this.currentCombo.push('lt');
-            }
-            if (this.gamepad.R1)
-            {
-                this.sprite.setTexture('RB_Button');
-                this.comboDelta = 0;
-                this.currentCombo.push('rb');
-                // 2XKO - Special 1
-                // SF6 - Heavy Punch
-            }
-            if (this.gamepad.R2)
-            {
-                this.sprite.setTexture('RT_Button');
-                this.comboDelta = 0;
-                this.currentCombo.push('rt');
-                // 2XKO - Parry
-                // SF6 - Heavy Kick
-            }
-        }
-        */
-
-        /*
-        // Handle keyboard input
-        if (this.keyObjects.left.isDown) {
-            // Highlight Key
-            this.sprite.setTexture('LEFT_Arrow');
-            this.comboDelta = 0;
-            this.currentCombo.push('left');
-        }
-
-        if (this.keyObjects.right.isDown) {
-            // Highlight Key
-            this.sprite.setTexture('RIGHT_Arrow');
-            this.comboDelta = 0;
-            this.currentCombo.push('right');
-        }
-
-        if (this.keyObjects.up.isDown) {
-            // Highlight Key
-            this.sprite.setTexture('UP_Arrow');
-            this.comboDelta = 0;
-            this.currentCombo.push('up');
-        }
-
-        if (this.keyObjects.down.isDown) {
-            // Highlight Key
-            this.sprite.setTexture('DOWN_Arrow');
-            this.comboDelta = 0;
-            this.currentCombo.push('down');
-        }
-
-        if (this.keyObjects.a.isDown)
-        {
-            this.sprite.setTexture('A_Button');
-            this.comboDelta = 0;
-            this.currentCombo.push('a');
-        }
-        if (this.keyObjects.y.isDown)
-        {
-            this.sprite.setTexture('Y_Button');
-            this.comboDelta = 0;
-            this.currentCombo.push('y');
-        }
-        if (this.keyObjects.x.isDown)
-        {
-            this.sprite.setTexture('X_Button');
-            this.comboDelta = 0;
-            this.currentCombo.push('x');
-        }
-        if (this.keyObjects.b.isDown)
-        {
-            this.sprite.setTexture('B_Button');
-            this.comboDelta = 0;
-            this.currentCombo.push('b');
-        }
-
-        if (this.keyObjects.rb.isDown)
-        {
-            this.sprite.setTexture('RB_Button');
-            this.comboDelta = 0;
-            this.currentCombo.push('rb');
-        }
-        if (this.keyObjects.rt.isDown)
-        {
-            this.sprite.setTexture('RT_Button');
-            this.comboDelta = 0;
-            this.currentCombo.push('rt');
-        }
-        if (this.keyObjects.lb.isDown)
-        {
-            this.sprite.setTexture('LB_Button');
-            this.comboDelta = 0;
-            this.currentCombo.push('lb');
-        }
-        if (this.keyObjects.lt.isDown)
-        {
-            this.sprite.setTexture('LT_Button');
-            this.comboDelta = 0;
-            this.currentCombo.push('lt');
-        }
-        */
     }
-
 }
