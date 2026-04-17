@@ -1,6 +1,53 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import type { Character, Move } from "../data/gameData";
-import { Trash2, RotateCcw } from "lucide-react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import type { Character, Combo, Move } from "../data/gameData";
+import { Trash2, RotateCcw, Check, X } from "lucide-react";
+
+/** First variant before "or", strip notes like (charged), j., charge brackets -> digits */
+function parseMoveInputToTokens(raw: string): string[] {
+  let s = raw.split(/\s+or\s+/i)[0].trim();
+  s = s.replace(/\s*\([^)]*\)\s*/g, "").trim();
+  s = s.replace(/^j\./i, "");
+  s = s.replace(/\[(\d)\]/g, "$1");
+  s = s.replace(/\s/g, "");
+  const tokens: string[] = [];
+  for (const ch of s) {
+    if (/[1-9]/.test(ch)) tokens.push(ch);
+    else if (/[pkshlm]/i.test(ch)) tokens.push(ch.toUpperCase());
+  }
+  return tokens;
+}
+
+function baseArrowToNumpad(sym: string): string {
+  const m: Record<string, string> = { "↓": "2", "↑": "8", "←": "4", "→": "6" };
+  return m[sym] ?? sym;
+}
+
+/** Map cardinal pairs to diagonals so QCF works as ↓,→,→ without a ↘ key */
+function arrowPairToNumpad(prevSym: string | undefined, sym: string): string {
+  const diagonals: Record<string, Record<string, string>> = {
+    "↓": { "→": "3", "←": "1" },
+    "↑": { "→": "9", "←": "7" },
+    "←": { "↓": "1", "↑": "7" },
+    "→": { "↓": "3", "↑": "9" },
+  };
+  if (prevSym && diagonals[prevSym]?.[sym]) return diagonals[prevSym][sym];
+  return baseArrowToNumpad(sym);
+}
+
+function tokenDisplayLabel(t: string): string {
+  const n: Record<string, string> = {
+    "1": "↙",
+    "2": "↓",
+    "3": "↘",
+    "4": "←",
+    "5": "●",
+    "6": "→",
+    "7": "↖",
+    "8": "↑",
+    "9": "↗",
+  };
+  return n[t] ?? t;
+}
 
 const KEY_TO_DIRECTION: Record<string, string> = {
   ArrowDown: "↓",
@@ -22,21 +69,6 @@ const KEY_TO_BUTTON: Record<string, string> = {
   i: "M",
 };
 
-const DIRECTION_TO_NUMPAD: Record<string, string> = {
-  "↓": "2",
-  "↑": "8",
-  "←": "4",
-  "→": "6",
-  "↙": "1",
-  "↘": "3",
-  "↖": "7",
-  "↗": "9",
-  "↓→": "3",
-  "↓←": "1",
-  "↑→": "9",
-  "↑←": "7",
-};
-
 // Common motion patterns
 const MOTION_PATTERNS: { name: string; pattern: string; numpad: string }[] = [
   { name: "Quarter Circle Forward", pattern: "↓↘→", numpad: "236" },
@@ -54,30 +86,196 @@ interface PracticeArenaProps {
   facing?: "right" | "left";
 }
 
+type PracticeEntry = {
+  kind: "move" | "combo";
+  name: string;
+  notation: string;
+  difficulty?: Combo["difficulty"];
+};
+
 export function PracticeArena({
   character,
   facing = "right",
 }: PracticeArenaProps) {
   const [inputHistory, setInputHistory] = useState<
-    { symbol: string; type: "direction" | "button"; timestamp: number }[]
+    { symbol: string; type: "direction" | "button"; timestamp: number; seq: number }[]
   >([]);
+  const inputSeqRef = useRef(0);
+  const lastProcessedSeqRef = useRef(0);
   const [recentMotion, setRecentMotion] = useState<string>("");
   const [matchedMove, setMatchedMove] = useState<Move | null>(null);
   const [activeKeys, setActiveKeys] = useState<Set<string>>(new Set());
   const [isActive, setIsActive] = useState(false);
   const arenaRef = useRef<HTMLDivElement>(null);
 
+  const [practiceEntry, setPracticeEntry] = useState<PracticeEntry | null>(null);
+  type StepState = "pending" | "success" | "fail";
+  const [practiceStepStatus, setPracticeStepStatus] = useState<StepState[]>([]);
+  const practiceIndexRef = useRef(0);
+  const practiceTokensRef = useRef<string[]>([]);
+  const resetTimerRef = useRef<number | null>(null);
+  const [isResettingPractice, setIsResettingPractice] = useState(false);
+
+  const practiceMoves = useMemo<PracticeEntry[]>(
+    () =>
+      character.moves.map((move) => ({
+        kind: "move" as const,
+        name: move.name,
+        notation: move.input,
+      })),
+    [character.moves]
+  );
+
+  const practiceCombos = useMemo<PracticeEntry[]>(
+    () =>
+      character.combos.map((combo) => ({
+        kind: "combo" as const,
+        name: combo.name,
+        notation: combo.inputs,
+        difficulty: combo.difficulty,
+      })),
+    [character.combos]
+  );
+
+  const practiceTokens = useMemo(
+    () => (practiceEntry ? parseMoveInputToTokens(practiceEntry.notation) : []),
+    [practiceEntry]
+  );
+
+  useEffect(() => {
+    practiceTokensRef.current = practiceTokens;
+  }, [practiceTokens]);
+
+  useEffect(() => {
+    return () => {
+      if (resetTimerRef.current !== null) {
+        window.clearTimeout(resetTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    practiceIndexRef.current = 0;
+    lastProcessedSeqRef.current = 0;
+    if (practiceEntry && practiceTokens.length > 0) {
+      setPracticeStepStatus(practiceTokens.map(() => "pending"));
+    } else {
+      setPracticeStepStatus([]);
+    }
+  }, [practiceEntry, practiceTokens]);
+
   const addInput = useCallback(
     (symbol: string, type: "direction" | "button") => {
       const now = Date.now();
+      inputSeqRef.current += 1;
+      const seq = inputSeqRef.current;
       setInputHistory((prev) => {
-        const newHistory = [...prev, { symbol, type, timestamp: now }];
-        // Keep last 30 inputs
+        const newHistory = [...prev, { symbol, type, timestamp: now, seq }];
         return newHistory.slice(-30);
       });
     },
     []
   );
+
+  useEffect(() => {
+    if (!practiceEntry || practiceTokens.length === 0 || inputHistory.length === 0)
+      return;
+    if (isResettingPractice) return;
+    const last = inputHistory[inputHistory.length - 1];
+    if (last.seq === lastProcessedSeqRef.current) return;
+    lastProcessedSeqRef.current = last.seq;
+
+    const prevDir = [...inputHistory]
+      .slice(0, -1)
+      .reverse()
+      .find((e) => e.type === "direction");
+    const got =
+      last.type === "direction"
+        ? arrowPairToNumpad(prevDir?.symbol, last.symbol)
+        : last.symbol.toUpperCase();
+
+    const idx = practiceIndexRef.current;
+    if (idx >= practiceTokens.length) return;
+    const expected = practiceTokens[idx];
+
+    const resetPracticeSoon = (ms: number) => {
+      setIsResettingPractice(true);
+      if (resetTimerRef.current !== null) {
+        window.clearTimeout(resetTimerRef.current);
+      }
+      resetTimerRef.current = window.setTimeout(() => {
+        practiceIndexRef.current = 0;
+        lastProcessedSeqRef.current = 0;
+        setInputHistory([]);
+        const tokens = practiceTokensRef.current;
+        if (tokens.length > 0) {
+          setPracticeStepStatus(tokens.map(() => "pending"));
+        }
+        setIsResettingPractice(false);
+        resetTimerRef.current = null;
+      }, ms);
+    };
+
+    const markStep = (stepIdx: number, state: StepState) => {
+      setPracticeStepStatus((prev) => {
+        const next = [...prev];
+        if (next[stepIdx] !== undefined) next[stepIdx] = state;
+        return next;
+      });
+    };
+
+    // Handle neutral "5" as an implicit requirement:
+    // the next non-direction input must be entered while no direction is held.
+    if (expected === "5") {
+      if (last.type === "direction") {
+        markStep(idx, "fail");
+        resetPracticeSoon(700);
+        return;
+      }
+
+      const hasDirectionHeld = [...activeKeys].some(
+        (key) => KEY_TO_DIRECTION[key] !== undefined
+      );
+      if (hasDirectionHeld) {
+        markStep(idx, "fail");
+        resetPracticeSoon(700);
+        return;
+      }
+
+      markStep(idx, "success");
+      const nextIdx = idx + 1;
+      practiceIndexRef.current = nextIdx;
+
+      if (nextIdx >= practiceTokens.length) {
+        resetPracticeSoon(1000);
+        return;
+      }
+
+      const nextExpected = practiceTokens[nextIdx];
+      if (got === nextExpected) {
+        markStep(nextIdx, "success");
+        practiceIndexRef.current = nextIdx + 1;
+        if (practiceIndexRef.current >= practiceTokens.length) {
+          resetPracticeSoon(1000);
+        }
+      } else {
+        markStep(nextIdx, "fail");
+        resetPracticeSoon(700);
+      }
+      return;
+    }
+
+    if (got === expected) {
+      markStep(idx, "success");
+      practiceIndexRef.current = idx + 1;
+      if (practiceIndexRef.current >= practiceTokens.length) {
+        resetPracticeSoon(1000);
+      }
+    } else {
+      markStep(idx, "fail");
+      resetPracticeSoon(700);
+    }
+  }, [inputHistory, practiceEntry, practiceTokens, activeKeys, isResettingPractice]);
 
   // Check for motion patterns
   useEffect(() => {
@@ -117,6 +315,10 @@ export function PracticeArena({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isActive) return;
+      if (isResettingPractice) {
+        e.preventDefault();
+        return;
+      }
       e.preventDefault();
 
       const key = e.key;
@@ -124,40 +326,17 @@ export function PracticeArena({
 
       setActiveKeys((prev) => new Set(prev).add(key));
 
-      // Check for diagonal inputs first
-      const currentKeys = new Set(activeKeys);
-      currentKeys.add(key);
-
       // Flip left/right if facing left
-      const flipKey = (k: string) => {
-        if (facing === "left") {
-          if (k === "ArrowLeft" || k === "a") return k === "ArrowLeft" ? "ArrowRight" : "d";
-          else if (k === "ArrowRight" || k === "d") return k === "ArrowRight" ? "ArrowLeft" : "a";
-        }
-        return k;
-      };
-
-      // Check for diagonal combinations
-      const hasDown = currentKeys.has("ArrowDown") || currentKeys.has("s");
-      const hasUp = currentKeys.has("ArrowUp") || currentKeys.has("w");
-      const hasLeft = currentKeys.has("ArrowLeft") || currentKeys.has("a");
-      const hasRight = currentKeys.has("ArrowRight") || currentKeys.has("d");
-
-      let diagonal: string | null = null;
-      if (hasDown && hasRight) {
-        diagonal = facing === "left" ? "↙" : "↘";
-      } else if (hasDown && hasLeft) {
-        diagonal = facing === "left" ? "↘" : "↙";
-      } else if (hasUp && hasRight) {
-        diagonal = facing === "left" ? "↖" : "↗";
-      } else if (hasUp && hasLeft) {
-        diagonal = facing === "left" ? "↗" : "↖";
+      let mappedKey = key;
+      if (facing === "left") {
+        if (key === "ArrowLeft" || key === "a")
+          mappedKey = key === "ArrowLeft" ? "ArrowRight" : "d";
+        else if (key === "ArrowRight" || key === "d")
+          mappedKey = key === "ArrowRight" ? "ArrowLeft" : "a";
       }
 
-      if (diagonal) {
-        addInput(diagonal, "direction");
-      } else if (KEY_TO_DIRECTION[flipKey(key)]) {
-        addInput(KEY_TO_DIRECTION[flipKey(key)], "direction");
+      if (KEY_TO_DIRECTION[mappedKey]) {
+        addInput(KEY_TO_DIRECTION[mappedKey], "direction");
       } else if (KEY_TO_BUTTON[key]) {
         addInput(KEY_TO_BUTTON[key], "button");
       }
@@ -177,12 +356,25 @@ export function PracticeArena({
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [isActive, activeKeys, addInput, facing]);
+  }, [isActive, activeKeys, addInput, facing, isResettingPractice]);
 
   const clearHistory = () => {
+    if (resetTimerRef.current !== null) {
+      window.clearTimeout(resetTimerRef.current);
+      resetTimerRef.current = null;
+    }
+    setIsResettingPractice(false);
     setInputHistory([]);
     setRecentMotion("");
     setMatchedMove(null);
+    lastProcessedSeqRef.current = 0;
+    practiceIndexRef.current = 0;
+    if (practiceEntry) {
+      const t = parseMoveInputToTokens(practiceEntry.notation);
+      if (t.length > 0) {
+        setPracticeStepStatus(t.map(() => "pending"));
+      }
+    }
   };
 
   const recentDisplay = inputHistory.slice(-15);
@@ -245,21 +437,10 @@ export function PracticeArena({
                 <div className="grid grid-cols-3 gap-1 w-fit">
                   {["↖", "↑", "↗", "←", "●", "→", "↙", "↓", "↘"].map(
                     (dir) => {
-                      const hasDown = activeKeys.has("ArrowDown") || activeKeys.has("s");
-                      const hasUp = activeKeys.has("ArrowUp") || activeKeys.has("w");
-                      const hasLeft = activeKeys.has("ArrowLeft") || activeKeys.has("a");
-                      const hasRight = activeKeys.has("ArrowRight") || activeKeys.has("d");
-
-                      let isPressed = false;
-                      if (dir === "↖") isPressed = hasUp && hasLeft;
-                      else if (dir === "↑") isPressed = hasUp && !hasLeft && !hasRight;
-                      else if (dir === "↗") isPressed = hasUp && hasRight;
-                      else if (dir === "←") isPressed = hasLeft && !hasUp && !hasDown;
-                      else if (dir === "→") isPressed = hasRight && !hasUp && !hasDown;
-                      else if (dir === "↙") isPressed = hasDown && hasLeft;
-                      else if (dir === "↓") isPressed = hasDown && !hasLeft && !hasRight;
-                      else if (dir === "↘") isPressed = hasDown && hasRight;
-
+                      const isPressed = [...activeKeys].some((key) => {
+                        const mapped = KEY_TO_DIRECTION[key];
+                        return mapped === dir;
+                      });
                       return (
                         <div
                           key={dir}
@@ -349,24 +530,224 @@ export function PracticeArena({
           </>
         )}
 
-        {/* Move list reference */}
+        {/* Move list + practice selection */}
         <div className="mt-6">
-          <h4 className="text-slate-300 mb-3">
-            Move List - Try these inputs:
+          <h4 className="text-slate-300 mb-1">
+            Move and combo list
           </h4>
-          <div className="space-y-2">
-            {character.moves.slice(0, 4).map((move) => (
-              <div
-                key={move.name}
-                className="flex items-center justify-between bg-slate-800/50 rounded-lg px-3 py-2"
-              >
-                <span className="text-white text-sm">{move.name}</span>
-                <span className="text-blue-300 text-sm font-mono">
-                  {move.input}
+          <p className="text-slate-500 text-sm mb-3">
+            Click any move or combo to practice. Each input step lights up{" "}
+            <span className="text-emerald-400 font-medium">green</span> when
+            correct and{" "}
+            <span className="text-red-400 font-medium">red</span> on a mistake
+            (then the sequence resets).
+          </p>
+
+          {practiceEntry && practiceTokens.length > 0 && (
+            <div className="mb-4 rounded-lg border border-blue-500/30 bg-[#0a1628] p-4 shadow-inner">
+              <p className="text-slate-400 text-sm mb-1">
+                Practicing:{" "}
+                <span className="text-white font-semibold">
+                  {practiceEntry.name}
                 </span>
+                <span className="text-blue-300 text-xs uppercase tracking-wide ml-2">
+                  {practiceEntry.kind}
+                </span>
+                {practiceEntry.kind === "combo" && practiceEntry.difficulty && (
+                  <span className="text-purple-300 text-xs uppercase tracking-wide ml-2">
+                    {practiceEntry.difficulty}
+                  </span>
+                )}
+                <span className="text-slate-500 font-mono text-xs ml-2">
+                  {practiceEntry.notation}
+                </span>
+              </p>
+              <p className="text-slate-500 text-xs mb-3">
+                Activate the arena above, then enter directions and buttons in
+                order. The highlighted ring shows the next step.
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                {practiceTokens.map((t, i) => {
+                  const st = practiceStepStatus[i] ?? "pending";
+                  const isNext =
+                    st === "pending" &&
+                    practiceTokens.slice(0, i).every(
+                      (_, j) => practiceStepStatus[j] === "success"
+                    );
+                  const chip =
+                    st === "success"
+                      ? "border-2 border-emerald-400 bg-emerald-500/20 text-emerald-100 shadow-[0_0_12px_rgba(52,211,153,0.35)]"
+                      : st === "fail"
+                        ? "border-2 border-red-500 bg-red-500/25 text-red-100 shadow-[0_0_12px_rgba(239,68,68,0.35)]"
+                        : isNext
+                          ? "border-2 border-amber-400/80 bg-slate-800/80 text-slate-100 ring-2 ring-amber-500/40"
+                          : "border border-slate-600 bg-slate-800/60 text-slate-400";
+                  return (
+                    <div
+                      key={`${t}-${i}`}
+                      className={`flex min-h-[2.5rem] min-w-[2.5rem] items-center justify-center gap-1 rounded-lg px-2.5 py-2 text-sm font-mono transition-all ${chip}`}
+                      title={
+                        st === "success"
+                          ? "Correct"
+                          : st === "fail"
+                            ? "Wrong input"
+                            : isNext
+                              ? "Next: enter this"
+                              : "Pending"
+                      }
+                    >
+                      {st === "success" && (
+                        <Check
+                          className="size-4 shrink-0 text-emerald-300"
+                          strokeWidth={2.5}
+                          aria-hidden
+                        />
+                      )}
+                      {st === "fail" && (
+                        <X
+                          className="size-4 shrink-0 text-red-300"
+                          strokeWidth={2.5}
+                          aria-hidden
+                        />
+                      )}
+                      <span>{tokenDisplayLabel(t)}</span>
+                    </div>
+                  );
+                })}
               </div>
-            ))}
+              <button
+                type="button"
+                onClick={() => {
+                  if (resetTimerRef.current !== null) {
+                    window.clearTimeout(resetTimerRef.current);
+                    resetTimerRef.current = null;
+                  }
+                  setIsResettingPractice(false);
+                  setPracticeEntry(null);
+                  setInputHistory([]);
+                  lastProcessedSeqRef.current = 0;
+                }}
+                className="mt-3 text-xs text-slate-500 hover:text-slate-300 underline-offset-2 hover:underline"
+              >
+                Clear selection
+              </button>
+            </div>
+          )}
+
+          {practiceEntry && practiceTokens.length === 0 && (
+            <p className="text-amber-400/90 text-sm mb-3">
+              This notation couldn&apos;t be parsed into steps.
+              Choose another move or combo.
+            </p>
+          )}
+
+          <div className="space-y-2">
+            {practiceMoves.map((entry, entryIdx) => {
+              const selected =
+                practiceEntry?.kind === entry.kind &&
+                practiceEntry?.name === entry.name &&
+                practiceEntry?.notation === entry.notation;
+              return (
+                <button
+                  type="button"
+                  key={`${entry.kind}-${entry.name}-${entryIdx}`}
+                  onClick={() => {
+                    if (resetTimerRef.current !== null) {
+                      window.clearTimeout(resetTimerRef.current);
+                      resetTimerRef.current = null;
+                    }
+                    setIsResettingPractice(false);
+                    setPracticeEntry(entry);
+                    setInputHistory([]);
+                    lastProcessedSeqRef.current = 0;
+                  }}
+                  className={`flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d1f35] ${
+                    selected
+                      ? "bg-blue-600/30 ring-2 ring-blue-400/70 shadow-md"
+                      : "bg-slate-800/50 hover:bg-slate-700/60 active:bg-slate-700/80"
+                  }`}
+                >
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="text-white text-sm font-medium truncate">
+                      {entry.name}
+                    </span>
+                    <span
+                      className={`text-[10px] px-1.5 py-0.5 rounded uppercase tracking-wide ${
+                        entry.kind === "combo"
+                          ? "bg-purple-500/25 text-purple-200 border border-purple-400/40"
+                          : "bg-blue-500/20 text-blue-200 border border-blue-400/40"
+                      }`}
+                    >
+                      {entry.kind}
+                    </span>
+                    {entry.kind === "combo" && entry.difficulty && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded uppercase tracking-wide bg-slate-700/70 text-slate-200 border border-slate-500/60">
+                        {entry.difficulty}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-blue-300 text-sm font-mono shrink-0">
+                    {entry.notation}
+                  </span>
+                </button>
+              );
+            })}
           </div>
+
+          {practiceCombos.length > 0 && (
+            <>
+              <div className="my-4 border-t border-blue-500/25" />
+              <p className="text-slate-400 text-xs uppercase tracking-wider mb-2">
+                Combos
+              </p>
+              <div className="space-y-2">
+                {practiceCombos.map((entry, entryIdx) => {
+                  const selected =
+                    practiceEntry?.kind === entry.kind &&
+                    practiceEntry?.name === entry.name &&
+                    practiceEntry?.notation === entry.notation;
+                  return (
+                    <button
+                      type="button"
+                      key={`${entry.kind}-${entry.name}-${entryIdx}`}
+                      onClick={() => {
+                        if (resetTimerRef.current !== null) {
+                          window.clearTimeout(resetTimerRef.current);
+                          resetTimerRef.current = null;
+                        }
+                        setIsResettingPractice(false);
+                        setPracticeEntry(entry);
+                        setInputHistory([]);
+                        lastProcessedSeqRef.current = 0;
+                      }}
+                      className={`flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d1f35] ${
+                        selected
+                          ? "bg-blue-600/30 ring-2 ring-blue-400/70 shadow-md"
+                          : "bg-slate-800/50 hover:bg-slate-700/60 active:bg-slate-700/80"
+                      }`}
+                    >
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className="text-white text-sm font-medium truncate">
+                          {entry.name}
+                        </span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded uppercase tracking-wide bg-purple-500/25 text-purple-200 border border-purple-400/40">
+                          {entry.kind}
+                        </span>
+                        {entry.difficulty && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded uppercase tracking-wide bg-slate-700/70 text-slate-200 border border-slate-500/60">
+                            {entry.difficulty}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-blue-300 text-sm font-mono shrink-0">
+                        {entry.notation}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
