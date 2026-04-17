@@ -239,7 +239,7 @@ export function HomePage() {
               className="text-xl text-white"
               style={{ fontFamily: "'UnifrakturMaguntia', cursive" }}
             >
-              Easy Combo
+              Reset Neutral
             </span>
             <div className="flex gap-6 text-sm text-slate-400">
               <Link to="/games" className="hover:text-white transition-colors">

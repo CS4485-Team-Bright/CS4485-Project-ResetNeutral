@@ -27,6 +27,7 @@ export interface Character {
   combos: Combo[];
   color: string;
   image?: string;
+  banner?: string;
 }
 
 export interface Game {

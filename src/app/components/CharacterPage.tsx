@@ -17,8 +17,21 @@ export function CharacterPage() {
   return (
     <div className="min-h-screen">
       {/* Character Header */}
-      <div className="border-b border-blue-500/15 bg-gradient-to-br from-blue-600/10 to-transparent">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="relative border-b border-blue-500/15 overflow-hidden">
+        {/* Banner Image Background */}
+        {character.banner && (
+          <div className="absolute inset-0 opacity-20">
+            <img
+              src={character.banner}
+              alt=""
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent" />
+          </div>
+        )}
+
+        {/* Content */}
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center gap-2 text-sm text-slate-400 mb-4">
             <Link to="/games" className="hover:text-white transition-colors">
               Games
@@ -191,33 +204,40 @@ export function CharacterPage() {
           {/* Right Column: Practice Arena */}
           <div className="space-y-4">
             {/* Sticky container */}
-            <div className="sticky top-20">
-              <div className="flex items-center gap-3 mb-2">
-                <h2 className="text-white">Practice Arena</h2>
-                <div className="flex rounded-lg overflow-hidden border border-blue-500/20">
-                  <button
-                    onClick={() => setFacing("right")}
-                    className={`px-3 py-1 text-sm transition-colors ${
-                      facing === "right"
-                        ? "bg-blue-600 text-white"
-                        : "bg-slate-800 text-slate-400 hover:text-white"
-                    }`}
-                  >
-                    → Right
-                  </button>
-                  <button
-                    onClick={() => setFacing("left")}
-                    className={`px-3 py-1 text-sm transition-colors ${
-                      facing === "left"
-                        ? "bg-blue-600 text-white"
-                        : "bg-slate-800 text-slate-400 hover:text-white"
-                    }`}
-                  >
-                    ← Left
-                  </button>
+            <div className="sticky top-4">
+              {/* Title and controls - integrated with sticky behavior */}
+              <div className="bg-[#0d1f35] border border-blue-500/30 rounded-t-xl p-4 border-b-0">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-white">Practice Arena</h2>
+                  <div className="flex rounded-lg overflow-hidden border border-blue-500/20">
+                    <button
+                      onClick={() => setFacing("right")}
+                      className={`px-3 py-1 text-sm transition-colors ${
+                        facing === "right"
+                          ? "bg-blue-600 text-white"
+                          : "bg-slate-800 text-slate-400 hover:text-white"
+                      }`}
+                    >
+                      → Right
+                    </button>
+                    <button
+                      onClick={() => setFacing("left")}
+                      className={`px-3 py-1 text-sm transition-colors ${
+                        facing === "left"
+                          ? "bg-blue-600 text-white"
+                          : "bg-slate-800 text-slate-400 hover:text-white"
+                      }`}
+                    >
+                      ← Left
+                    </button>
+                  </div>
                 </div>
               </div>
-              <PracticeArena character={character} facing={facing} />
+              
+              {/* Practice Arena component - remove top border radius to connect with title */}
+              <div className="rounded-t-none overflow-hidden">
+                <PracticeArena character={character} facing={facing} />
+              </div>
 
               {/* Back Link */}
               <Link

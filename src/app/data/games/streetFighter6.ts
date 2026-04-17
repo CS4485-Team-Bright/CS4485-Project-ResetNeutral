@@ -23,6 +23,7 @@ export const streetFighter6: Game = {
       difficulty: "Easy",
       color: "#ffffff",
       image: "https://external-preview.redd.it/til-street-fighters-ryu-is-based-on-a-real-life-karate-v0-tKEd3TfaVhTy3avC_vhoV14aPO0NbEtmrL62lwoFQsE.jpg?width=640&crop=smart&auto=webp&s=c47761738e2e2a4d66f9a62611c4f5b9bdc04a08",
+      banner:"https://www.streetfighter.com/6/assets/images/character/ryu/sns.jpg",
       moves: [
         { name: "Hadouken", input: "236P", damage: "60", startup: "13f", type: "Special", description: "Ryu's iconic fireball. A key zoning tool and combo ender.", gif: "https://media.tenor.com/hQA6jk2FxwQAAAAM/ryu-hadouken.gif" },
         { name: "Shoryuken", input: "623P", damage: "100-140", startup: "6f", type: "Special", description: "The legendary uppercut. Invincible reversal that defines Ryu." },
