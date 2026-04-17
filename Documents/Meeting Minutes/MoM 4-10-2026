@@ -1,0 +1,18 @@
+Meeting Minutes:
+
+Discussed improvements to input handling
+Discussed cleaning and updates of the github
+Discussed updates to the UI of the website
+
+TODO: Create scalability actions
+
+CSCD setup for testing before going to prod
+write out scalability document 
+
+Building profile system using supabase, supabase has authentication built into it.
+Storing training data, having admin role to add new moves or games from front end
+
+Scalability and testing in mind
+Authentication and load balancing
+
+Know what all the terms are from an interview point of view
