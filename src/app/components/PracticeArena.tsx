@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import type { Character, Combo, Move } from "../data/gameData";
+import type { Character, Combo, Move } from "../types/game";
 import { Trash2, RotateCcw, Check, X } from "lucide-react";
 
 /** First variant before "or", strip notes like (charged), j., charge brackets -> digits */

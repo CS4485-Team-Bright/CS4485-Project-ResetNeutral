@@ -1,74 +1,57 @@
 import { useParams, Link, Navigate } from "react-router";
-import { getCharacter } from "../data/gameData";
 import { ArrowLeft } from "lucide-react";
 import { InputDisplay } from "./InputDisplay";
 import { PracticeArena } from "./PracticeArena";
 import { useState } from "react";
+import { useCharacter } from "../hooks/useGameData";
 
 export function CharacterPage() {
   const { gameId, characterId } = useParams();
-  const result = getCharacter(gameId || "", characterId || "");
+  const { game, character, loading, error } = useCharacter(gameId || "", characterId || "");
   const [facing, setFacing] = useState<"right" | "left">("right");
 
-  if (!result) return <Navigate to="/games" />;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-slate-400">
+        Loading character...
+      </div>
+    );
+  }
 
-  const { game, character } = result;
+  if (error || !game || !character) return <Navigate to="/games" />;
 
   return (
     <div className="min-h-screen">
-      {/* Character Header */}
       <div className="relative border-b border-blue-500/15 overflow-hidden">
-        {/* Banner Image Background */}
         {character.banner && (
           <div className="absolute inset-0 opacity-20">
-            <img
-              src={character.banner}
-              alt=""
-              className="w-full h-full object-cover"
-            />
+            <img src={character.banner} alt="" className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent" />
           </div>
         )}
-
-        {/* Content */}
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center gap-2 text-sm text-slate-400 mb-4">
-            <Link to="/games" className="hover:text-white transition-colors">
-              Games
-            </Link>
+            <Link to="/games" className="hover:text-white transition-colors">Games</Link>
             <span>/</span>
-            <Link
-              to={`/game/${game.id}`}
-              className="hover:text-white transition-colors"
-            >
-              {game.shortName}
+            <Link to={`/game/${game.id}`} className="hover:text-white transition-colors">
+              {game.short_name}
             </Link>
             <span>/</span>
             <span className="text-white">{character.name}</span>
           </div>
 
           <div className="flex flex-col md:flex-row items-start gap-6">
-            {/* Character Image/Avatar */}
             {character.image ? (
               <div
                 className="w-32 h-32 rounded-2xl overflow-hidden flex items-center justify-center flex-shrink-0 border-2"
-                style={{
-                  borderColor: character.color + "50",
-                }}
+                style={{ borderColor: character.color + "50" }}
               >
-                <img
-                  src={character.image}
-                  alt={character.name}
-                  className="w-full h-full object-cover"
-                />
+                <img src={character.image} alt={character.name} className="w-full h-full object-cover" />
               </div>
             ) : (
               <div
                 className="w-32 h-32 rounded-2xl flex items-center justify-center flex-shrink-0 border-2"
-                style={{
-                  backgroundColor: character.color + "20",
-                  borderColor: character.color + "50",
-                }}
+                style={{ backgroundColor: character.color + "20", borderColor: character.color + "50" }}
               >
                 <div className="text-center px-4">
                   <div className="text-blue-500/30 text-3xl mb-1">🥋</div>
@@ -78,13 +61,9 @@ export function CharacterPage() {
             )}
 
             <div className="flex-1">
-              <p className="text-blue-400 text-sm">
-                {game.name}'s {character.title}
-              </p>
+              <p className="text-blue-400 text-sm">{game.name}'s {character.title}</p>
               <h1 className="text-white mb-2">{character.name}</h1>
-              <p className="text-slate-300 max-w-2xl mb-4">
-                {character.description}
-              </p>
+              <p className="text-slate-300 max-w-2xl mb-4">{character.description}</p>
               <div className="flex flex-wrap items-center gap-3">
                 <span className="text-sm text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full">
                   {character.archetype}
@@ -108,17 +87,12 @@ export function CharacterPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid lg:grid-cols-2 gap-8">
-          {/* Left Column: Moves & Combos */}
           <div className="space-y-8">
-            {/* Move List */}
             <div>
               <h2 className="text-white mb-4">Move List</h2>
               <div className="space-y-3">
                 {character.moves.map((move) => (
-                  <div
-                    key={move.name}
-                    className="bg-[#111d33] border border-blue-500/15 rounded-xl p-4"
-                  >
+                  <div key={move.id} className="bg-[#111d33] border border-blue-500/15 rounded-xl p-4">
                     <div className="flex items-start justify-between gap-4 mb-2">
                       <div>
                         <h4 className="text-white">{move.name}</h4>
@@ -128,20 +102,11 @@ export function CharacterPage() {
                       </div>
                       <InputDisplay input={move.input} size="sm" />
                     </div>
-
-                    {/* GIF Display */}
-                    {move.gif && (
+                    {move.gif ? (
                       <div className="mt-3 mb-3 rounded-lg overflow-hidden border border-blue-500/20 bg-[#0a1628]">
-                        <img
-                          src={move.gif}
-                          alt={`${move.name} demonstration`}
-                          className="w-full h-auto"
-                        />
+                        <img src={move.gif} alt={`${move.name} demonstration`} className="w-full h-auto" />
                       </div>
-                    )}
-
-                    {/* Placeholder for when no GIF is provided */}
-                    {!move.gif && (
+                    ) : (
                       <div className="mt-3 mb-3 rounded-lg overflow-hidden border border-blue-500/20 bg-[#0a1628] aspect-video flex items-center justify-center">
                         <div className="text-center px-4">
                           <div className="text-blue-500/30 text-4xl mb-2">🎬</div>
@@ -150,10 +115,7 @@ export function CharacterPage() {
                         </div>
                       </div>
                     )}
-
-                    <p className="text-slate-400 text-sm mt-2">
-                      {move.description}
-                    </p>
+                    <p className="text-slate-400 text-sm mt-2">{move.description}</p>
                     <div className="flex gap-4 mt-2 text-xs text-slate-500">
                       <span>Damage: {move.damage}</span>
                       <span>Startup: {move.startup}</span>
@@ -163,15 +125,11 @@ export function CharacterPage() {
               </div>
             </div>
 
-            {/* Combos */}
             <div>
               <h2 className="text-white mb-4">Combos</h2>
               <div className="space-y-3">
                 {character.combos.map((combo) => (
-                  <div
-                    key={combo.name}
-                    className="bg-[#111d33] border border-blue-500/15 rounded-xl p-4"
-                  >
+                  <div key={combo.id} className="bg-[#111d33] border border-blue-500/15 rounded-xl p-4">
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="text-white">{combo.name}</h4>
                       <span
@@ -191,9 +149,7 @@ export function CharacterPage() {
                     </div>
                     <div className="flex items-center justify-between text-xs text-slate-500">
                       <span>{combo.notes}</span>
-                      <span className="text-blue-400 flex-shrink-0 ml-2">
-                        {combo.damage} dmg
-                      </span>
+                      <span className="text-blue-400 flex-shrink-0 ml-2">{combo.damage} dmg</span>
                     </div>
                   </div>
                 ))}
@@ -201,11 +157,8 @@ export function CharacterPage() {
             </div>
           </div>
 
-          {/* Right Column: Practice Arena */}
           <div className="space-y-4">
-            {/* Sticky container */}
             <div className="sticky top-4">
-              {/* Title and controls - integrated with sticky behavior */}
               <div className="bg-[#0d1f35] border border-blue-500/30 rounded-t-xl p-4 border-b-0">
                 <div className="flex items-center gap-3">
                   <h2 className="text-white">Practice Arena</h2>
@@ -213,9 +166,7 @@ export function CharacterPage() {
                     <button
                       onClick={() => setFacing("right")}
                       className={`px-3 py-1 text-sm transition-colors ${
-                        facing === "right"
-                          ? "bg-blue-600 text-white"
-                          : "bg-slate-800 text-slate-400 hover:text-white"
+                        facing === "right" ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-400 hover:text-white"
                       }`}
                     >
                       → Right
@@ -223,9 +174,7 @@ export function CharacterPage() {
                     <button
                       onClick={() => setFacing("left")}
                       className={`px-3 py-1 text-sm transition-colors ${
-                        facing === "left"
-                          ? "bg-blue-600 text-white"
-                          : "bg-slate-800 text-slate-400 hover:text-white"
+                        facing === "left" ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-400 hover:text-white"
                       }`}
                     >
                       ← Left
@@ -233,19 +182,15 @@ export function CharacterPage() {
                   </div>
                 </div>
               </div>
-              
-              {/* Practice Arena component - remove top border radius to connect with title */}
               <div className="rounded-t-none overflow-hidden">
                 <PracticeArena character={character} facing={facing} />
               </div>
-
-              {/* Back Link */}
               <Link
                 to={`/game/${game.id}`}
                 className="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors mt-4"
               >
                 <ArrowLeft size={16} />
-                Back to {game.shortName} Characters
+                Back to {game.short_name} Characters
               </Link>
             </div>
           </div>

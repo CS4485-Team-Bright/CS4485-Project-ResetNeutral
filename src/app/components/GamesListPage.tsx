@@ -1,6 +1,6 @@
 import { Link } from "react-router";
-import { games } from "../data/gameData";
 import { ChevronRight } from "lucide-react";
+import { useGames } from "../hooks/useGameData";
 
 const GAME_GRADIENTS: Record<string, string> = {
   "guilty-gear-strive": "from-red-600/30 to-yellow-600/10",
@@ -9,6 +9,8 @@ const GAME_GRADIENTS: Record<string, string> = {
 };
 
 export function GamesListPage() {
+  const { games, loading, error } = useGames();
+
   return (
     <div className="min-h-screen py-8 md:py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -17,31 +19,31 @@ export function GamesListPage() {
           Choose a fighting game to explore characters, moves, and combos.
         </p>
 
+        {loading && (
+          <p className="text-slate-400 text-center">Loading games...</p>
+        )}
+        {error && (
+          <p className="text-red-400 text-center">Failed to load games: {error}</p>
+        )}
+
         <div className="grid md:grid-cols-3 gap-6">
           {games.map((game) => (
             <Link
               key={game.id}
               to={`/game/${game.id}`}
-              className={`group relative bg-[#111d33] border border-blue-500/20 rounded-xl overflow-hidden hover:border-blue-400/40 transition-all hover:scale-[1.02]`}
+              className="group relative bg-[#111d33] border border-blue-500/20 rounded-xl overflow-hidden hover:border-blue-400/40 transition-all hover:scale-[1.02]"
             >
-              {/* Banner Image Background */}
               {game.banner && (
                 <div className="absolute inset-0 opacity-15 group-hover:opacity-25 transition-opacity">
-                  <img
-                    src={game.banner}
-                    alt=""
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={game.banner} alt="" className="w-full h-full object-cover" />
                   <div className={`absolute inset-0 bg-gradient-to-br ${GAME_GRADIENTS[game.id]}`} />
                 </div>
               )}
-
-              {/* Content */}
               <div className="relative p-6">
                 <div className="mb-4">
                   <h2 className="text-white mb-1">{game.name}</h2>
                   <p className="text-slate-400 text-sm">
-                    {game.developer} &middot; {game.releaseYear}
+                    {game.developer} &middot; {game.release_year}
                   </p>
                 </div>
                 <p className="text-slate-300 text-sm mb-6 line-clamp-3">

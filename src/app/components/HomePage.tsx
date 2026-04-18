@@ -1,7 +1,7 @@
 import { Link } from "react-router";
-import { games } from "../data/gameData";
 import { Swords, BookOpen, Gamepad2, Users, Target, Zap } from "lucide-react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
+import { useGames } from "../hooks/useGameData";
 
 const heroImg =
   "https://images.unsplash.com/photo-1759171053096-e7dbe7c36eb6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmaWdodGluZyUyMGdhbWUlMjBhcmNhZGUlMjBuZW9ufGVufDF8fHx8MTc3Mjc0NTcxNXww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral";
@@ -19,6 +19,8 @@ const GAME_COLORS: Record<string, string> = {
 };
 
 export function HomePage() {
+  const { games } = useGames();
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -55,7 +57,6 @@ export function HomePage() {
             </div>
           </div>
         </div>
-        {/* Gradient hero image */}
         <div className="max-w-5xl mx-auto px-4 pb-8">
           <div className="relative rounded-2xl overflow-hidden h-48 md:h-72">
             <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/40 via-blue-400/40 to-purple-400/40" />
@@ -80,7 +81,6 @@ export function HomePage() {
                 className={`group relative bg-gradient-to-br ${GAME_COLORS[game.id]} border border-blue-500/20 rounded-xl overflow-hidden hover:border-blue-400/40 transition-all hover:scale-105 w-64`}
               >
                 <div className="relative h-40 overflow-hidden">
-                  <div className="" />
                   <ImageWithFallback
                     src={game.logo}
                     alt={game.name}
@@ -90,12 +90,10 @@ export function HomePage() {
                     <span
                       className="text-4xl font-black text-white tracking-tighter"
                       style={{
-                        textShadow: '0 0 20px rgba(0, 0, 0, 0.8), 0 0 40px rgba(0, 0, 0, 0.6)',
-                        fontFamily: "'Orbitron', sans-serif"
+                        textShadow: "0 0 20px rgba(0, 0, 0, 0.8), 0 0 40px rgba(0, 0, 0, 0.6)",
+                        fontFamily: "'Orbitron', sans-serif",
                       }}
-                    >
-                      {/* {game.shortName} */}
-                    </span>
+                    />
                   </div>
                 </div>
                 <div className="px-4 py-3 bg-slate-900/80 backdrop-blur-sm">
@@ -217,14 +215,9 @@ export function HomePage() {
                 key={feature.title}
                 className="bg-[#111d33] border border-blue-500/15 rounded-xl p-6"
               >
-                <feature.icon
-                  size={24}
-                  className="text-blue-400 mb-3"
-                />
+                <feature.icon size={24} className="text-blue-400 mb-3" />
                 <h4 className="text-white mb-2">{feature.title}</h4>
-                <p className="text-slate-400 text-sm">
-                  {feature.description}
-                </p>
+                <p className="text-slate-400 text-sm">{feature.description}</p>
               </div>
             ))}
           </div>
