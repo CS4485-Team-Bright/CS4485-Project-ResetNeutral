@@ -49,4 +49,6 @@ export interface Game {
   accent_color: string;
   logo?: string;
   banner?: string;
+  input_window_ms: number;
+  combo_link_window_ms: number;
 }

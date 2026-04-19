@@ -183,7 +183,12 @@ export function CharacterPage() {
                 </div>
               </div>
               <div className="rounded-t-none overflow-hidden">
-                <PracticeArena character={character} facing={facing} />
+                <PracticeArena
+                  character={character}
+                  facing={facing}
+                  inputWindowMs={game.input_window_ms}
+                  comboLinkWindowMs={game.combo_link_window_ms}
+                />
               </div>
               <Link
                 to={`/game/${game.id}`}

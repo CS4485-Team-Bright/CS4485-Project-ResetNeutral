@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import type { Character, Combo, Move } from "../types/game";
-import { Trash2, RotateCcw, Check, X } from "lucide-react";
+import { Trash2, RotateCcw, Check, X, Clock } from "lucide-react";
 
 /** First variant before "or", strip notes like (charged), j., charge brackets -> digits */
 function parseMoveInputToTokens(raw: string): string[] {
@@ -84,6 +84,8 @@ const MOTION_PATTERNS: { name: string; pattern: string; numpad: string }[] = [
 interface PracticeArenaProps {
   character: Character;
   facing?: "right" | "left";
+  inputWindowMs?: number;
+  comboLinkWindowMs?: number;
 }
 
 type PracticeEntry = {
@@ -93,9 +95,14 @@ type PracticeEntry = {
   difficulty?: Combo["difficulty"];
 };
 
+const DEFAULT_INPUT_WINDOW = 300;
+const DEFAULT_COMBO_LINK_WINDOW = 700;
+
 export function PracticeArena({
   character,
   facing = "right",
+  inputWindowMs = DEFAULT_INPUT_WINDOW,
+  comboLinkWindowMs = DEFAULT_COMBO_LINK_WINDOW,
 }: PracticeArenaProps) {
   const [inputHistory, setInputHistory] = useState<
     { symbol: string; type: "direction" | "button"; timestamp: number; seq: number }[]
@@ -115,6 +122,14 @@ export function PracticeArena({
   const practiceTokensRef = useRef<string[]>([]);
   const resetTimerRef = useRef<number | null>(null);
   const [isResettingPractice, setIsResettingPractice] = useState(false);
+  const [tooSlowMessage, setTooSlowMessage] = useState(false);
+
+  // Timer bar state
+  const [timerProgress, setTimerProgress] = useState(0); // 0-1, 1 = full
+  const timerStartRef = useRef<number | null>(null);
+  const timerDurationRef = useRef<number>(0);
+  const timerRafRef = useRef<number | null>(null);
+  const inputWindowTimerRef = useRef<number | null>(null);
 
   const practiceMoves = useMemo<PracticeEntry[]>(
     () =>
@@ -148,21 +163,96 @@ export function PracticeArena({
 
   useEffect(() => {
     return () => {
-      if (resetTimerRef.current !== null) {
-        window.clearTimeout(resetTimerRef.current);
+      if (resetTimerRef.current !== null) window.clearTimeout(resetTimerRef.current);
+      if (inputWindowTimerRef.current !== null) window.clearTimeout(inputWindowTimerRef.current);
+      if (timerRafRef.current !== null) cancelAnimationFrame(timerRafRef.current);
+    };
+  }, []);
+
+  // Determine the active window duration based on move vs combo
+  const getWindowMs = useCallback(() => {
+    if (!practiceEntry) return inputWindowMs;
+    return practiceEntry.kind === "combo" ? comboLinkWindowMs : inputWindowMs;
+  }, [practiceEntry, inputWindowMs, comboLinkWindowMs]);
+
+  // Start the countdown timer bar + timeout
+  const startInputTimer = useCallback(() => {
+    // Clear any existing timer
+    if (inputWindowTimerRef.current !== null) {
+      window.clearTimeout(inputWindowTimerRef.current);
+      inputWindowTimerRef.current = null;
+    }
+    if (timerRafRef.current !== null) {
+      cancelAnimationFrame(timerRafRef.current);
+      timerRafRef.current = null;
+    }
+
+    const windowMs = getWindowMs();
+    timerStartRef.current = performance.now();
+    timerDurationRef.current = windowMs;
+    setTimerProgress(1);
+
+    // Animate the bar
+    const animate = () => {
+      const start = timerStartRef.current;
+      if (start === null) return;
+      const elapsed = performance.now() - start;
+      const remaining = Math.max(0, 1 - elapsed / timerDurationRef.current);
+      setTimerProgress(remaining);
+      if (remaining > 0) {
+        timerRafRef.current = requestAnimationFrame(animate);
       }
     };
+    timerRafRef.current = requestAnimationFrame(animate);
+
+    // Set the timeout for "too slow"
+    inputWindowTimerRef.current = window.setTimeout(() => {
+      // Time expired — fail and reset
+      setTooSlowMessage(true);
+      setTimerProgress(0);
+      setIsResettingPractice(true);
+      if (resetTimerRef.current !== null) window.clearTimeout(resetTimerRef.current);
+      resetTimerRef.current = window.setTimeout(() => {
+        practiceIndexRef.current = 0;
+        lastProcessedSeqRef.current = 0;
+        setInputHistory([]);
+        const tokens = practiceTokensRef.current;
+        if (tokens.length > 0) {
+          setPracticeStepStatus(tokens.map(() => "pending"));
+        }
+        setIsResettingPractice(false);
+        setTooSlowMessage(false);
+        resetTimerRef.current = null;
+        timerStartRef.current = null;
+      }, 800);
+      inputWindowTimerRef.current = null;
+    }, windowMs);
+  }, [getWindowMs]);
+
+  const stopInputTimer = useCallback(() => {
+    if (inputWindowTimerRef.current !== null) {
+      window.clearTimeout(inputWindowTimerRef.current);
+      inputWindowTimerRef.current = null;
+    }
+    if (timerRafRef.current !== null) {
+      cancelAnimationFrame(timerRafRef.current);
+      timerRafRef.current = null;
+    }
+    timerStartRef.current = null;
+    setTimerProgress(0);
   }, []);
 
   useEffect(() => {
     practiceIndexRef.current = 0;
     lastProcessedSeqRef.current = 0;
+    stopInputTimer();
+    setTooSlowMessage(false);
     if (practiceEntry && practiceTokens.length > 0) {
       setPracticeStepStatus(practiceTokens.map(() => "pending"));
     } else {
       setPracticeStepStatus([]);
     }
-  }, [practiceEntry, practiceTokens]);
+  }, [practiceEntry, practiceTokens, stopInputTimer]);
 
   const addInput = useCallback(
     (symbol: string, type: "direction" | "button") => {
@@ -189,9 +279,13 @@ export function PracticeArena({
       .slice(0, -1)
       .reverse()
       .find((e) => e.type === "direction");
-    const got =
+    const gotDiagonal =
       last.type === "direction"
         ? arrowPairToNumpad(prevDir?.symbol, last.symbol)
+        : last.symbol.toUpperCase();
+    const gotBase =
+      last.type === "direction"
+        ? baseArrowToNumpad(last.symbol)
         : last.symbol.toUpperCase();
 
     const idx = practiceIndexRef.current;
@@ -200,6 +294,7 @@ export function PracticeArena({
 
     const resetPracticeSoon = (ms: number) => {
       setIsResettingPractice(true);
+      stopInputTimer();
       if (resetTimerRef.current !== null) {
         window.clearTimeout(resetTimerRef.current);
       }
@@ -212,6 +307,7 @@ export function PracticeArena({
           setPracticeStepStatus(tokens.map(() => "pending"));
         }
         setIsResettingPractice(false);
+        setTooSlowMessage(false);
         resetTimerRef.current = null;
       }, ms);
     };
@@ -225,7 +321,6 @@ export function PracticeArena({
     };
 
     // Handle neutral "5" as an implicit requirement:
-    // the next non-direction input must be entered while no direction is held.
     if (expected === "5") {
       if (last.type === "direction") {
         markStep(idx, "fail");
@@ -247,16 +342,23 @@ export function PracticeArena({
       practiceIndexRef.current = nextIdx;
 
       if (nextIdx >= practiceTokens.length) {
+        stopInputTimer();
         resetPracticeSoon(1000);
         return;
       }
 
+      // Restart timer for next input
+      startInputTimer();
+
       const nextExpected = practiceTokens[nextIdx];
-      if (got === nextExpected) {
+      if (gotDiagonal === nextExpected || gotBase === nextExpected) {
         markStep(nextIdx, "success");
         practiceIndexRef.current = nextIdx + 1;
         if (practiceIndexRef.current >= practiceTokens.length) {
+          stopInputTimer();
           resetPracticeSoon(1000);
+        } else {
+          startInputTimer();
         }
       } else {
         markStep(nextIdx, "fail");
@@ -265,17 +367,21 @@ export function PracticeArena({
       return;
     }
 
-    if (got === expected) {
+    if (gotDiagonal === expected || gotBase === expected) {
       markStep(idx, "success");
       practiceIndexRef.current = idx + 1;
       if (practiceIndexRef.current >= practiceTokens.length) {
+        stopInputTimer();
         resetPracticeSoon(1000);
+      } else {
+        // Restart timer for next input
+        startInputTimer();
       }
     } else {
       markStep(idx, "fail");
       resetPracticeSoon(700);
     }
-  }, [inputHistory, practiceEntry, practiceTokens, activeKeys, isResettingPractice]);
+  }, [inputHistory, practiceEntry, practiceTokens, activeKeys, isResettingPractice, startInputTimer, stopInputTimer]);
 
   // Check for motion patterns
   useEffect(() => {
@@ -286,12 +392,10 @@ export function PracticeArena({
       .map((i) => i.symbol)
       .join("");
 
-    // Check for motion patterns
     for (const motion of MOTION_PATTERNS) {
       if (recentInputs.includes(motion.pattern)) {
         setRecentMotion(motion.name);
 
-        // Check if a button was pressed right after
         const lastInput = inputHistory[inputHistory.length - 1];
         if (lastInput.type === "button") {
           const numpadNotation = motion.numpad + lastInput.symbol;
@@ -326,7 +430,6 @@ export function PracticeArena({
 
       setActiveKeys((prev) => new Set(prev).add(key));
 
-      // Flip left/right if facing left
       let mappedKey = key;
       if (facing === "left") {
         if (key === "ArrowLeft" || key === "a")
@@ -337,8 +440,15 @@ export function PracticeArena({
 
       if (KEY_TO_DIRECTION[mappedKey]) {
         addInput(KEY_TO_DIRECTION[mappedKey], "direction");
+        // Start timer on first input of a practice sequence
+        if (practiceEntry && practiceIndexRef.current === 0 && timerStartRef.current === null) {
+          startInputTimer();
+        }
       } else if (KEY_TO_BUTTON[key]) {
         addInput(KEY_TO_BUTTON[key], "button");
+        if (practiceEntry && practiceIndexRef.current === 0 && timerStartRef.current === null) {
+          startInputTimer();
+        }
       }
     };
 
@@ -356,14 +466,16 @@ export function PracticeArena({
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [isActive, activeKeys, addInput, facing, isResettingPractice]);
+  }, [isActive, activeKeys, addInput, facing, isResettingPractice, practiceEntry, startInputTimer]);
 
   const clearHistory = () => {
     if (resetTimerRef.current !== null) {
       window.clearTimeout(resetTimerRef.current);
       resetTimerRef.current = null;
     }
+    stopInputTimer();
     setIsResettingPractice(false);
+    setTooSlowMessage(false);
     setInputHistory([]);
     setRecentMotion("");
     setMatchedMove(null);
@@ -379,6 +491,14 @@ export function PracticeArena({
 
   const recentDisplay = inputHistory.slice(-15);
 
+  // Timer bar color based on remaining time
+  const timerBarColor =
+    timerProgress > 0.5
+      ? "bg-emerald-400"
+      : timerProgress > 0.25
+      ? "bg-yellow-400"
+      : "bg-red-400";
+
   return (
     <div
       ref={arenaRef}
@@ -389,6 +509,10 @@ export function PracticeArena({
           Practice Arena ({facing === "right" ? "Right Facing" : "Left Facing"})
         </h3>
         <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 text-xs text-slate-500">
+            <Clock size={12} />
+            <span>{practiceEntry?.kind === "combo" ? comboLinkWindowMs : inputWindowMs}ms</span>
+          </div>
           <button
             onClick={clearHistory}
             className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors"
@@ -565,7 +689,30 @@ export function PracticeArena({
               <p className="text-slate-500 text-xs mb-3">
                 Activate the arena above, then enter directions and buttons in
                 order. The highlighted ring shows the next step.
+                <span className="text-amber-400/70 ml-1">
+                  Input window: {practiceEntry.kind === "combo" ? comboLinkWindowMs : inputWindowMs}ms
+                </span>
               </p>
+
+              {/* Timer bar */}
+              {timerProgress > 0 && (
+                <div className="w-full h-1.5 bg-slate-700 rounded-full mb-3 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-none ${timerBarColor}`}
+                    style={{ width: `${timerProgress * 100}%` }}
+                  />
+                </div>
+              )}
+
+              {/* Too slow message */}
+              {tooSlowMessage && (
+                <div className="mb-3 text-center">
+                  <span className="text-red-400 text-sm font-semibold animate-pulse">
+                    ⏱ Too slow! Resetting...
+                  </span>
+                </div>
+              )}
+
               <div className="flex flex-wrap items-center gap-2">
                 {practiceTokens.map((t, i) => {
                   const st = practiceStepStatus[i] ?? "pending";
@@ -622,7 +769,9 @@ export function PracticeArena({
                     window.clearTimeout(resetTimerRef.current);
                     resetTimerRef.current = null;
                   }
+                  stopInputTimer();
                   setIsResettingPractice(false);
+                  setTooSlowMessage(false);
                   setPracticeEntry(null);
                   setInputHistory([]);
                   lastProcessedSeqRef.current = 0;
@@ -656,7 +805,9 @@ export function PracticeArena({
                       window.clearTimeout(resetTimerRef.current);
                       resetTimerRef.current = null;
                     }
+                    stopInputTimer();
                     setIsResettingPractice(false);
+                    setTooSlowMessage(false);
                     setPracticeEntry(entry);
                     setInputHistory([]);
                     lastProcessedSeqRef.current = 0;
@@ -715,7 +866,9 @@ export function PracticeArena({
                           window.clearTimeout(resetTimerRef.current);
                           resetTimerRef.current = null;
                         }
+                        stopInputTimer();
                         setIsResettingPractice(false);
+                        setTooSlowMessage(false);
                         setPracticeEntry(entry);
                         setInputHistory([]);
                         lastProcessedSeqRef.current = 0;
