@@ -67,14 +67,24 @@ function parseMoveInputToTokens(raw: string): string[] {
   return tokens;
 }
 
-function tokenDisplayLabel(t: string): string {
+function tokenDisplayLabel(t: string, facing: "right" | "left" = "right"): string {
   // \uFE0E forces text presentation instead of emoji rendering for OS that substitute arrows
-  const n: Record<string, string> = {
-    "1": "↙\uFE0E", "2": "↓\uFE0E", "3": "↘\uFE0E",
-    "4": "←\uFE0E", "5": "●", "6": "→\uFE0E",
-    "7": "↖\uFE0E", "8": "↑\uFE0E", "9": "↗\uFE0E",
-  };
-  return n[t] ?? t;
+  if (facing === "right") {
+    const rightMap: Record<string, string> = {
+      "1": "↙\uFE0E", "2": "↓\uFE0E", "3": "↘\uFE0E",
+      "4": "←\uFE0E", "5": "●", "6": "→\uFE0E",
+      "7": "↖\uFE0E", "8": "↑\uFE0E", "9": "↗\uFE0E",
+    };
+    return rightMap[t] ?? t;
+  } else {
+    // Visually mirror the horizontal directions for Left Facing
+    const leftMap: Record<string, string> = {
+      "1": "↘\uFE0E", "2": "↓\uFE0E", "3": "↙\uFE0E",
+      "4": "→\uFE0E", "5": "●", "6": "←\uFE0E",
+      "7": "↗\uFE0E", "8": "↑\uFE0E", "9": "↖\uFE0E",
+    };
+    return leftMap[t] ?? t;
+  }
 }
 
 function getActiveDirectionNumpad(keys: Set<string>, facing: "right" | "left"): string {
@@ -663,7 +673,8 @@ export function PracticeArena({
                 <div className="grid grid-cols-3 gap-1 w-fit">
                   {["7", "8", "9", "4", "5", "6", "1", "2", "3"].map((dirNumpad) => {
                     const isPressed = physicalNumpad === dirNumpad;
-                    const label = tokenDisplayLabel(dirNumpad);
+                    // The layout grid always shows physical right-facing reality (Keys mapped to layout)
+                    const label = tokenDisplayLabel(dirNumpad, "right");
                     return (
                       <div
                         key={dirNumpad}
@@ -680,16 +691,15 @@ export function PracticeArena({
 
               <div className="grid grid-cols-3 gap-1">
                 {[
-
-                    { label: "L (U)", key: "u" },
-                    { label: "M (I)", key: "i" },
-                    { label: "", key: "" },
-                    { label: "P (J)", key: "j" },
-                    { label: "K (K)", key: "k" },
-                    { label: "S (L)", key: "l" },
-                    { label: "H (;)", key: ";" },
-                    { label: "", key: "" },
-                    { label: "", key: "" },
+                  { label: "L (U)", key: "u" },
+                  { label: "M (I)", key: "i" },
+                  { label: "", key: "" },
+                  { label: "P (J)", key: "j" },
+                  { label: "K (K)", key: "k" },
+                  { label: "S (L)", key: "l" },
+                  { label: "H (;)", key: ";" },
+                  { label: "", key: "" },
+                  { label: "", key: "" },
                 ].map((btn, i) =>
                   btn.key ? (
                     <div
@@ -721,7 +731,7 @@ export function PracticeArena({
                         : "bg-blue-600 border border-blue-400 text-white"
                     }`}
                   >
-                    {tokenDisplayLabel(input.symbol)}
+                    {tokenDisplayLabel(input.symbol, facing)}
                   </div>
                 ))}
               </div>
@@ -870,7 +880,7 @@ export function PracticeArena({
                     >
                       {st === "success" && <Check className="size-4 shrink-0 text-emerald-300" strokeWidth={2.5} />}
                       {st === "fail" && <X className="size-4 shrink-0 text-red-300" strokeWidth={2.5} />}
-                      <span>{tokenDisplayLabel(t)}</span>
+                      <span>{tokenDisplayLabel(t, facing)}</span>
                     </div>
                   );
                 })}

@@ -3,7 +3,7 @@ import { Navigate, Link } from "react-router";
 import { supabase } from "../api/client";
 import { useAuth } from "../hooks/useAuth";
 import { useUserMoveMastery, useUserComboMastery } from "../hooks/useMastery";
-import { ChevronDown, User, Gamepad2, Check, Save } from "lucide-react";
+import { ChevronDown, User, Gamepad2, Check, Save, Trophy, Play, ArrowDownAZ, SortAsc, SortDesc } from "lucide-react";
 
 type MoveLite = { id: string };
 type ComboLite = { id: string };
@@ -34,6 +34,7 @@ export function ProfilePage() {
   const [usernameDraft, setUsernameDraft] = useState("");
   const [games, setGames] = useState<GameLite[]>([]);
   const [expandedGameId, setExpandedGameId] = useState<string | null>(null);
+  const [sortOrder, setSortOrder] = useState<"alpha" | "most" | "least">("alpha");
 
   useEffect(() => {
     async function loadProfile() {
@@ -77,6 +78,24 @@ export function ProfilePage() {
 
   const { map: masteryMap } = useUserMoveMastery(allMoveIds);
   const { map: comboMasteryMap } = useUserComboMastery(allComboIds);
+
+  const { totalItemsCount, masteredItemsCount } = useMemo(() => {
+    let tCount = 0;
+    let mCount = 0;
+    games.forEach((g) => g.characters.forEach((c) => {
+      c.moves?.forEach((m) => {
+        tCount++;
+        if (masteryMap.get(m.id)?.mastered) mCount++;
+      });
+      c.combos?.forEach((cm) => {
+        tCount++;
+        if (comboMasteryMap.get(cm.id)?.mastered) mCount++;
+      });
+    }));
+    return { totalItemsCount: tCount, masteredItemsCount: mCount };
+  }, [games, masteryMap, comboMasteryMap]);
+
+  const overallMasteryPct = totalItemsCount === 0 ? 0 : Math.round((masteredItemsCount / totalItemsCount) * 100);
 
   if (!user) return <Navigate to="/auth" />;
 
@@ -123,6 +142,11 @@ export function ProfilePage() {
     <div className="max-w-6xl mx-auto px-4 py-8">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap');
+        @keyframes shimmer {
+          100% {
+            transform: translateX(100%);
+          }
+        }
       `}</style>
     
       <div className="mb-8">
@@ -166,8 +190,54 @@ export function ProfilePage() {
         </div>
       </div>
 
+      {/* OVERALL PROGRESS SUMMARY */}
+      {totalItemsCount > 0 && (
+        <div className="bg-[#0d1f35] border border-blue-500/30 rounded-xl overflow-hidden mb-8 shadow-[0_0_15px_rgba(59,130,246,0.15)] relative">
+          <div className="p-4 border-b border-blue-500/20 flex items-center justify-between bg-blue-500/5">
+            <div className="flex items-center gap-2">
+              <Trophy className="text-emerald-400 font-['Orbitron']" size={20} />
+              <h3 className="text-white font-semibold font-['Orbitron'] tracking-wider">Universal Mastery</h3>
+            </div>
+            <span className="text-emerald-400 font-bold font-['Orbitron'] text-xl">{overallMasteryPct}%</span>
+          </div>
+          <div className="p-6">
+            <p className="text-slate-400 text-sm mb-4 font-['Orbitron'] flex justify-between items-center tracking-wider">
+              <span>Overall Progress</span>
+              <span className="text-slate-300"><span className="text-emerald-400 font-bold">{masteredItemsCount}</span> / {totalItemsCount} Mastered</span>
+            </p>
+            <div className="w-full h-3.5 bg-[#0a1628] rounded-full overflow-hidden border border-slate-700 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] relative">
+              <div 
+                className="h-full bg-gradient-to-r from-emerald-600 via-emerald-400 to-emerald-300 relative shadow-[0_0_10px_rgba(52,211,153,0.8)]"
+                style={{ width: `${overallMasteryPct}%`, transition: 'width 1s ease-in-out' }}
+              >
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-30 mix-blend-overlay"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-[shimmer_2s_infinite] -translate-x-full" style={{ backgroundSize: '200% 100%' }}></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* EMPTY STATE CTA */}
+      {totalItemsCount > 0 && masteredItemsCount === 0 && (
+        <div className="mb-8 rounded-xl border border-blue-500/40 bg-[#0a1628] p-8 text-center shadow-[0_0_25px_rgba(59,130,246,0.15)] relative overflow-hidden group">
+          <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-blue-400/80 to-transparent mix-blend-overlay" />
+          <h2 className="text-2xl font-bold text-white mb-2 font-['Orbitron']">Ready to begin your journey?</h2>
+          <p className="text-slate-400 mb-6 max-w-lg mx-auto font-['Orbitron'] text-sm tracking-wide">
+            You haven't mastered any moves or combos yet. Step into the arena, choose a game, and start filling those rings with neon green!
+          </p>
+          <Link 
+            to="/games" 
+            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-lg font-bold font-['Orbitron'] tracking-widest uppercase transition-all shadow-[0_0_15px_rgba(59,130,246,0.4)] hover:shadow-[0_0_25px_rgba(59,130,246,0.6)] group-hover:scale-105"
+          >
+            <Play size={18} fill="currentColor" />
+            Start Practicing
+          </Link>
+        </div>
+      )}
+
       {/* GAME MASTERY CARD */}
-      <div className="bg-[#0d1f35] border border-blue-500/30 rounded-xl overflow-hidden shadow-lg">
+      <div className="bg-[#0d1f35] border border-blue-500/30 rounded-xl overflow-hidden shadow-lg border-t border-t-blue-500/50">
         <div className="p-4 border-b border-blue-500/20 flex items-center gap-2">
           <Gamepad2 className="text-blue-400" size={20} />
           <h3 className="text-white font-semibold font-['Orbitron']">Game Mastery</h3>
@@ -221,8 +291,45 @@ export function ProfilePage() {
                   </button>
 
                   {isOpen && (
-                    <div className="p-5 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                      {game.characters.map((character) => {
+                    <div className="p-5 flex flex-col gap-4">
+                      <div className="flex items-center justify-between border-b border-slate-700/50 pb-3 mb-2">
+                        <span className="text-slate-400 text-xs uppercase tracking-widest font-['Orbitron'] font-semibold">
+                          Characters
+                        </span>
+                        <div className="flex items-center bg-[#0a1628] rounded-lg p-1 border border-slate-700 shadow-inner gap-1">
+                          <button
+                            onClick={() => setSortOrder("alpha")}
+                            className={`p-1.5 rounded flex items-center justify-center transition-all ${sortOrder === "alpha" ? "bg-blue-500/20 border border-blue-500/50 text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.3)]" : "text-slate-500 border border-transparent hover:text-slate-300"}`}
+                            title="Alphabetical"
+                          >
+                            <ArrowDownAZ size={16} />
+                          </button>
+                          <button
+                            onClick={() => setSortOrder("most")}
+                            className={`p-1.5 rounded flex items-center justify-center transition-all ${sortOrder === "most" ? "bg-blue-500/20 border border-blue-500/50 text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.3)]" : "text-slate-500 border border-transparent hover:text-slate-300"}`}
+                            title="Most Mastered"
+                          >
+                            <SortDesc size={16} />
+                          </button>
+                          <button
+                            onClick={() => setSortOrder("least")}
+                            className={`p-1.5 rounded flex items-center justify-center transition-all ${sortOrder === "least" ? "bg-blue-500/20 border border-blue-500/50 text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.3)]" : "text-slate-500 border border-transparent hover:text-slate-300"}`}
+                            title="Least Mastered"
+                          >
+                            <SortAsc size={16} />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                      {[...game.characters].sort((a, b) => {
+                        if (sortOrder === "alpha") {
+                          return a.name.localeCompare(b.name);
+                        }
+                        const pctA = characterMasteryPercent(a);
+                        const pctB = characterMasteryPercent(b);
+                        return sortOrder === "most" ? pctB - pctA : pctA - pctB;
+                      }).map((character) => {
                         const pct = characterMasteryPercent(character);
 
                         return (
@@ -267,6 +374,7 @@ export function ProfilePage() {
                           </Link>
                         );
                       })}
+                      </div>
                     </div>
                   )}
                 </div>
