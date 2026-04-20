@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import type { Character, Combo, Move } from "../types/game";
-import { Trash2, RotateCcw, Check, X, Clock, Zap } from "lucide-react";
+import { Trash2, RotateCcw, Check, X, Clock, Zap, HelpCircle } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useUserMoveMastery, useUserComboMastery, recordMoveAttempt } from "../hooks/useMastery";
 
@@ -15,7 +15,6 @@ function playAudioFeedback(type: "success" | "fail", chainIndex: number = 0) {
       audioCtx = new AudioCtx();
     }
     
-    // Some browsers suspend audio context until user interaction
     if (audioCtx.state === "suspended") {
       audioCtx.resume();
     }
@@ -27,13 +26,10 @@ function playAudioFeedback(type: "success" | "fail", chainIndex: number = 0) {
     gainNode.connect(audioCtx.destination);
 
     if (type === "success") {
-      // Base frequency A4 (440Hz). Pitches up a whole tone (2 semitones) per correct combo step sequentially.
       const freq = 440 * Math.pow(2, (chainIndex * 2) / 12);
-      
       osc.type = "sine";
       osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
       
-      // Clean, plucky envelope
       gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
       gainNode.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.01);
       gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
@@ -41,7 +37,6 @@ function playAudioFeedback(type: "success" | "fail", chainIndex: number = 0) {
       osc.start(audioCtx.currentTime);
       osc.stop(audioCtx.currentTime + 0.15);
     } else {
-      // Dull "bzzzt" for failure
       osc.type = "sawtooth";
       osc.frequency.setValueAtTime(150, audioCtx.currentTime);
       
@@ -53,12 +48,11 @@ function playAudioFeedback(type: "success" | "fail", chainIndex: number = 0) {
       osc.stop(audioCtx.currentTime + 0.25);
     }
   } catch (e) {
-    // Gracefully ignore, browser likely blocked audio
+    // Gracefully ignore
   }
 }
 // --------------------
 
-/** First variant before "or", strip notes like (charged), j., charge brackets -> digits */
 function parseMoveInputToTokens(raw: string): string[] {
   let s = raw.split(/\s+or\s+/i)[0].trim();
   s = s.replace(/\s*\([^)]*\)\s*/g, "").trim();
@@ -73,69 +67,45 @@ function parseMoveInputToTokens(raw: string): string[] {
   return tokens;
 }
 
-function baseArrowToNumpad(sym: string): string {
-  const m: Record<string, string> = { "↓": "2", "↑": "8", "←": "4", "→": "6" };
-  return m[sym] ?? sym;
-}
-
-/** Map cardinal pairs to diagonals so QCF works as ↓,→,→ without a ↘ key */
-function arrowPairToNumpad(prevSym: string | undefined, sym: string): string {
-  const diagonals: Record<string, Record<string, string>> = {
-    "↓": { "→": "3", "←": "1" },
-    "↑": { "→": "9", "←": "7" },
-    "←": { "↓": "1", "↑": "7" },
-    "→": { "↓": "3", "↑": "9" },
-  };
-  if (prevSym && diagonals[prevSym]?.[sym]) return diagonals[prevSym][sym];
-  return baseArrowToNumpad(sym);
-}
-
 function tokenDisplayLabel(t: string): string {
   const n: Record<string, string> = {
-    "1": "↙",
-    "2": "↓",
-    "3": "↘",
-    "4": "←",
-    "5": "●",
-    "6": "→",
-    "7": "↖",
-    "8": "↑",
-    "9": "↗",
+    "1": "↙", "2": "↓", "3": "↘",
+    "4": "←", "5": "●", "6": "→",
+    "7": "↖", "8": "↑", "9": "↗",
   };
   return n[t] ?? t;
 }
 
-const KEY_TO_DIRECTION: Record<string, string> = {
-  ArrowDown: "↓",
-  ArrowUp: "↑",
-  ArrowLeft: "←",
-  ArrowRight: "→",
-  s: "↓",
-  w: "↑",
-  a: "←",
-  d: "→",
-};
+function getActiveDirectionNumpad(keys: Set<string>, facing: "right" | "left"): string {
+  let up = keys.has("w") || keys.has("ArrowUp") || keys.has("W");
+  let down = keys.has("s") || keys.has("ArrowDown") || keys.has("S");
+  let left = keys.has("a") || keys.has("ArrowLeft") || keys.has("A");
+  let right = keys.has("d") || keys.has("ArrowRight") || keys.has("D");
+
+  if (facing === "left") {
+    const temp = left;
+    left = right;
+    right = temp;
+  }
+
+  // SOCD Neutral
+  if (up && down) { up = false; down = false; }
+  if (left && right) { left = false; right = false; }
+
+  if (up && left) return "7";
+  if (up && right) return "9";
+  if (down && left) return "1";
+  if (down && right) return "3";
+  if (up) return "8";
+  if (down) return "2";
+  if (left) return "4";
+  if (right) return "6";
+  return "5";
+}
 
 const KEY_TO_BUTTON: Record<string, string> = {
-  j: "P",
-  k: "K",
-  l: "S",
-  ";": "H",
-  u: "L",
-  i: "M",
+  j: "P", k: "K", l: "S", ";": "H", u: "L", i: "M",
 };
-
-// Common motion patterns
-const MOTION_PATTERNS: { name: string; pattern: string; numpad: string }[] = [
-  { name: "Quarter Circle Forward", pattern: "↓↘→", numpad: "236" },
-  { name: "Quarter Circle Back", pattern: "↓↙←", numpad: "214" },
-  { name: "Dragon Punch", pattern: "→↓↘", numpad: "623" },
-  { name: "Half Circle Forward", pattern: "←↙↓↘→", numpad: "41236" },
-  { name: "Half Circle Back", pattern: "→↘↓↙←", numpad: "63214" },
-  { name: "Double QCF", pattern: "↓↘→↓↘→", numpad: "236236" },
-  { name: "Charge Back-Forward", pattern: "←→", numpad: "[4]6" },
-  { name: "Charge Down-Up", pattern: "↓↑", numpad: "[2]8" },
-];
 
 interface PracticeArenaProps {
   character: Character;
@@ -176,19 +146,15 @@ export function PracticeArena({
   >([]);
   const inputSeqRef = useRef(0);
   const lastProcessedSeqRef = useRef(0);
-  const [recentMotion, setRecentMotion] = useState<string>("");
-  const [matchedMove, setMatchedMove] = useState<Move | null>(null);
   const [activeKeys, setActiveKeys] = useState<Set<string>>(new Set());
   const [isActive, setIsActive] = useState(false);
   const arenaRef = useRef<HTMLDivElement>(null);
 
   const [practiceEntry, setPracticeEntry] = useState<PracticeEntry | null>(null);
   
-  // Optimistic tracking for local streak visually
   const [localStreak, setLocalStreak] = useState<number>(0);
   const [isMastered, setIsMastered] = useState<boolean>(false);
   const [localBestTime, setLocalBestTime] = useState<number | null>(null);
-  // Caches mastered moves & combos this session so they don't disappear before DB syncs
   const [sessionMasteredIds, setSessionMasteredIds] = useState<Set<string>>(new Set());
 
   type StepState = "pending" | "success" | "fail";
@@ -201,12 +167,13 @@ export function PracticeArena({
 
   const attemptStartMsRef = useRef<number | null>(null);
 
-  // Timer bar state
-  const [timerProgress, setTimerProgress] = useState(0); // 0-1, 1 = full
+  const [timerProgress, setTimerProgress] = useState(0); 
   const timerStartRef = useRef<number | null>(null);
   const timerDurationRef = useRef<number>(0);
   const timerRafRef = useRef<number | null>(null);
   const inputWindowTimerRef = useRef<number | null>(null);
+  
+  const lastNumpadDirRef = useRef<string>("5");
 
   const practiceMoves = useMemo<PracticeEntry[]>(
     () =>
@@ -236,31 +203,25 @@ export function PracticeArena({
     [practiceEntry]
   );
 
-  // Overall Character Mastery Calculation
   const characterMasteryPct = useMemo(() => {
     const totalEntries = character.moves.length + character.combos.length;
     if (totalEntries === 0) return 0;
     
     let masteredCount = 0;
-    
     character.moves.forEach(m => {
       if (sessionMasteredIds.has(m.id) || masteryMap.get(m.id)?.mastered) masteredCount++;
     });
-
     character.combos.forEach(c => {
       if (sessionMasteredIds.has(c.id) || comboMasteryMap.get(c.id)?.mastered) masteredCount++;
     });
-    
     return Math.round((masteredCount / totalEntries) * 100);
   }, [character.moves, character.combos, masteryMap, comboMasteryMap, sessionMasteredIds]);
 
-  // Sync DB streak & best time on entry selection
   useEffect(() => {
     if (practiceEntry && practiceEntry.id) {
       const activeMap = practiceEntry.kind === "move" ? masteryMap : comboMasteryMap;
       const dbMastery = activeMap.get(practiceEntry.id);
       const locallyMastered = sessionMasteredIds.has(practiceEntry.id);
-      
       setLocalStreak(dbMastery?.current_streak_count || 0);
       setIsMastered(locallyMastered || dbMastery?.mastered || false);
       setLocalBestTime(dbMastery?.best_avg_time_ms || null);
@@ -271,59 +232,41 @@ export function PracticeArena({
     }
   }, [practiceEntry, masteryMap, comboMasteryMap, sessionMasteredIds]);
 
-  const recordResult = useCallback(
-    async (success: boolean) => {
-      if (!user || !practiceEntry || !practiceEntry.id) return;
-
-      const durationMs =
-        success && attemptStartMsRef.current !== null
-          ? Date.now() - attemptStartMsRef.current
-          : 0;
-
-      // Optimistic visual update
-      if (success) {
-        setLocalStreak((prev) => {
-          const next = prev + 1;
-          if (next >= 5) {
-            setIsMastered(true);
-            setSessionMasteredIds((s) => new Set(s).add(practiceEntry.id!));
-            return 0; // Backend resets active streak count to 0 after 5
-          }
-          return next;
-        });
-
-        // Optimistically update best time if it's faster
-        if (durationMs > 0) {
-           setLocalBestTime(prev => prev === null ? durationMs : Math.min(prev, durationMs));
+  const recordResult = useCallback(async (success: boolean) => {
+    if (!user || !practiceEntry || !practiceEntry.id) return;
+    const durationMs = success && attemptStartMsRef.current !== null ? Date.now() - attemptStartMsRef.current : 0;
+    
+    if (success) {
+      setLocalStreak((prev) => {
+        const next = prev + 1;
+        if (next >= 5) {
+          setIsMastered(true);
+          setSessionMasteredIds((s) => new Set(s).add(practiceEntry.id!));
+          return 0; 
         }
-      } else {
-        setLocalStreak(0);
-      }
-
-      await recordMoveAttempt({
-        userId: user.id,
-        moveId: practiceEntry.kind === "move" ? practiceEntry.id : undefined,
-        comboId: practiceEntry.kind === "combo" ? practiceEntry.id : undefined,
-        gameId,
-        characterId: character.id,
-        success,
-        durationMs,
+        return next;
       });
-    },
-    [user, practiceEntry, gameId, character.id]
-  );
+      if (durationMs > 0) {
+         setLocalBestTime(prev => prev === null ? durationMs : Math.min(prev, durationMs));
+      }
+    } else {
+      setLocalStreak(0);
+    }
+
+    await recordMoveAttempt({
+      userId: user.id,
+      moveId: practiceEntry.kind === "move" ? practiceEntry.id : undefined,
+      comboId: practiceEntry.kind === "combo" ? practiceEntry.id : undefined,
+      gameId,
+      characterId: character.id,
+      success,
+      durationMs,
+    });
+  }, [user, practiceEntry, gameId, character.id]);
 
   useEffect(() => {
     practiceTokensRef.current = practiceTokens;
   }, [practiceTokens]);
-
-  useEffect(() => {
-    return () => {
-      if (resetTimerRef.current !== null) window.clearTimeout(resetTimerRef.current);
-      if (inputWindowTimerRef.current !== null) window.clearTimeout(inputWindowTimerRef.current);
-      if (timerRafRef.current !== null) cancelAnimationFrame(timerRafRef.current);
-    };
-  }, []);
 
   const getWindowMs = useCallback(() => {
     if (!practiceEntry) return inputWindowMs;
@@ -361,9 +304,7 @@ export function PracticeArena({
       setTooSlowMessage(true);
       setTimerProgress(0);
       setIsResettingPractice(true);
-      
       playAudioFeedback("fail");
-
       await recordResult(false);
 
       if (resetTimerRef.current !== null) window.clearTimeout(resetTimerRef.current);
@@ -371,9 +312,8 @@ export function PracticeArena({
         practiceIndexRef.current = 0;
         lastProcessedSeqRef.current = 0;
         setInputHistory([]);
-        const tokens = practiceTokensRef.current;
-        if (tokens.length > 0) {
-          setPracticeStepStatus(tokens.map(() => "pending"));
+        if (practiceTokensRef.current.length > 0) {
+          setPracticeStepStatus(practiceTokensRef.current.map(() => "pending"));
         }
         setIsResettingPractice(false);
         setTooSlowMessage(false);
@@ -416,8 +356,7 @@ export function PracticeArena({
     inputSeqRef.current += 1;
     const seq = inputSeqRef.current;
     setInputHistory((prev) => {
-      const newHistory = [...prev, { symbol, type, timestamp: now, seq }];
-      return newHistory.slice(-30);
+      return [...prev, { symbol, type, timestamp: now, seq }].slice(-30);
     });
   }, []);
 
@@ -428,19 +367,7 @@ export function PracticeArena({
     if (last.seq === lastProcessedSeqRef.current) return;
     lastProcessedSeqRef.current = last.seq;
 
-    const prevDir = [...inputHistory]
-      .slice(0, -1)
-      .reverse()
-      .find((e) => e.type === "direction");
-
-    const gotDiagonal =
-      last.type === "direction"
-        ? arrowPairToNumpad(prevDir?.symbol, last.symbol)
-        : last.symbol.toUpperCase();
-    const gotBase =
-      last.type === "direction"
-        ? baseArrowToNumpad(last.symbol)
-        : last.symbol.toUpperCase();
+    const gotDir = last.type === "direction" ? last.symbol : last.symbol.toUpperCase();
 
     const idx = practiceIndexRef.current;
     if (idx >= practiceTokens.length) return;
@@ -449,19 +376,15 @@ export function PracticeArena({
     const resetPracticeSoon = async (ms: number, success: boolean) => {
       setIsResettingPractice(true);
       stopInputTimer();
-
       await recordResult(success);
 
-      if (resetTimerRef.current !== null) {
-        window.clearTimeout(resetTimerRef.current);
-      }
+      if (resetTimerRef.current !== null) window.clearTimeout(resetTimerRef.current);
       resetTimerRef.current = window.setTimeout(() => {
         practiceIndexRef.current = 0;
         lastProcessedSeqRef.current = 0;
         setInputHistory([]);
-        const tokens = practiceTokensRef.current;
-        if (tokens.length > 0) {
-          setPracticeStepStatus(tokens.map(() => "pending"));
+        if (practiceTokensRef.current.length > 0) {
+          setPracticeStepStatus(practiceTokensRef.current.map(() => "pending"));
         }
         setIsResettingPractice(false);
         setTooSlowMessage(false);
@@ -478,19 +401,18 @@ export function PracticeArena({
       });
     };
 
+    // If expecting Neutral [5]
     if (expected === "5") {
-      if (last.type === "direction") {
+      // If they pressed a wrong button before clearing neutral, fail
+      if (last.type === "button") {
         markStep(idx, "fail");
         playAudioFeedback("fail");
         void resetPracticeSoon(700, false);
         return;
       }
 
-      const hasDirectionHeld = [...activeKeys].some((key) => KEY_TO_DIRECTION[key] !== undefined);
-      if (hasDirectionHeld) {
-        markStep(idx, "fail");
-        playAudioFeedback("fail");
-        void resetPracticeSoon(700, false);
+      // If they are still holding ANY direction, ignore and let the timer countdown wait for release
+      if (getActiveDirectionNumpad(activeKeys, facing) !== "5") {
         return;
       }
 
@@ -505,25 +427,11 @@ export function PracticeArena({
       }
 
       startInputTimer();
-      const nextExpected = practiceTokens[nextIdx];
-      if (gotDiagonal === nextExpected || gotBase === nextExpected) {
-        markStep(nextIdx, "success");
-        playAudioFeedback("success", nextIdx);
-        practiceIndexRef.current = nextIdx + 1;
-        if (practiceIndexRef.current >= practiceTokens.length) {
-          void resetPracticeSoon(1000, true);
-        } else {
-          startInputTimer();
-        }
-      } else {
-        markStep(nextIdx, "fail");
-        playAudioFeedback("fail");
-        void resetPracticeSoon(700, false);
-      }
       return;
     }
 
-    if (gotDiagonal === expected || gotBase === expected) {
+    // Processing normally for directional or button matches
+    if (gotDir === expected) {
       markStep(idx, "success");
       playAudioFeedback("success", idx);
       practiceIndexRef.current = idx + 1;
@@ -533,41 +441,18 @@ export function PracticeArena({
         startInputTimer();
       }
     } else {
+      // **THE MAGIC FIX**: Ignore overlapping/sloppy direction inputs. 
+      // Only fail immediately if they hit the wrong attack button.
+      if (last.type === "direction") {
+        return;
+      }
+      
+      // Pressed the wrong attack button
       markStep(idx, "fail");
       playAudioFeedback("fail");
       void resetPracticeSoon(700, false);
     }
-  }, [inputHistory, practiceEntry, practiceTokens, activeKeys, isResettingPractice, startInputTimer, stopInputTimer, recordResult]);
-
-  // Check for motion patterns
-  useEffect(() => {
-    if (inputHistory.length < 2) return;
-
-    const recentInputs = inputHistory
-      .filter((i) => Date.now() - i.timestamp < 2000)
-      .map((i) => i.symbol)
-      .join("");
-
-    for (const motion of MOTION_PATTERNS) {
-      if (recentInputs.includes(motion.pattern)) {
-        setRecentMotion(motion.name);
-
-        const lastInput = inputHistory[inputHistory.length - 1];
-        if (lastInput.type === "button") {
-          const numpadNotation = motion.numpad + lastInput.symbol;
-          const matched = character.moves.find((m) => {
-            const moveInput = m.input.replace(/\s/g, "").split("or")[0].trim();
-            return moveInput.startsWith(numpadNotation);
-          });
-          if (matched) {
-            setMatchedMove(matched);
-            setTimeout(() => setMatchedMove(null), 3000);
-          }
-        }
-        break;
-      }
-    }
-  }, [inputHistory, character.moves]);
+  }, [inputHistory, practiceEntry, practiceTokens, activeKeys, isResettingPractice, startInputTimer, stopInputTimer, recordResult, facing]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -576,43 +461,63 @@ export function PracticeArena({
         e.preventDefault();
         return;
       }
-      e.preventDefault();
 
       const key = e.key;
       if (activeKeys.has(key)) return;
 
-      setActiveKeys((prev) => new Set(prev).add(key));
+      const kLow = key.toLowerCase();
+      const isDir = ["arrowup", "arrowdown", "arrowleft", "arrowright", "w", "a", "s", "d"].includes(kLow);
+      const isBtn = !!KEY_TO_BUTTON[key];
 
-      let mappedKey = key;
-      if (facing === "left") {
-        if (key === "ArrowLeft" || key === "a") {
-          mappedKey = key === "ArrowLeft" ? "ArrowRight" : "d";
-        } else if (key === "ArrowRight" || key === "d") {
-          mappedKey = key === "ArrowRight" ? "ArrowLeft" : "a";
-        }
-      }
+      if (!isDir && !isBtn) return;
+      e.preventDefault();
 
-      if (KEY_TO_DIRECTION[mappedKey]) {
-        addInput(KEY_TO_DIRECTION[mappedKey], "direction");
-        if (practiceEntry && practiceIndexRef.current === 0 && timerStartRef.current === null) {
-          attemptStartMsRef.current = Date.now();
-          startInputTimer();
-        }
-      } else if (KEY_TO_BUTTON[key]) {
+      const nextKeys = new Set(activeKeys);
+      nextKeys.add(key);
+      setActiveKeys(nextKeys);
+
+      if (isBtn) {
         addInput(KEY_TO_BUTTON[key], "button");
         if (practiceEntry && practiceIndexRef.current === 0 && timerStartRef.current === null) {
           attemptStartMsRef.current = Date.now();
           startInputTimer();
         }
       }
+
+      if (isDir) {
+        const nextDir = getActiveDirectionNumpad(nextKeys, facing);
+        if (nextDir !== lastNumpadDirRef.current) {
+          lastNumpadDirRef.current = nextDir;
+          if (nextDir !== "5") {
+            addInput(nextDir, "direction");
+            if (practiceEntry && practiceIndexRef.current === 0 && timerStartRef.current === null) {
+              attemptStartMsRef.current = Date.now();
+              startInputTimer();
+            }
+          }
+        }
+      }
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
-      setActiveKeys((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(e.key);
-        return newSet;
-      });
+      if (!activeKeys.has(e.key)) return;
+
+      const nextKeys = new Set(activeKeys);
+      nextKeys.delete(e.key);
+      setActiveKeys(nextKeys);
+
+      const kLow = e.key.toLowerCase();
+      const isDir = ["arrowup", "arrowdown", "arrowleft", "arrowright", "w", "a", "s", "d"].includes(kLow);
+
+      if (isDir) {
+        const nextDir = getActiveDirectionNumpad(nextKeys, facing);
+        if (nextDir !== lastNumpadDirRef.current) {
+          lastNumpadDirRef.current = nextDir;
+          if (nextDir !== "5") {
+            addInput(nextDir, "direction");
+          }
+        }
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -632,10 +537,9 @@ export function PracticeArena({
     setIsResettingPractice(false);
     setTooSlowMessage(false);
     setInputHistory([]);
-    setRecentMotion("");
-    setMatchedMove(null);
     lastProcessedSeqRef.current = 0;
     practiceIndexRef.current = 0;
+    lastNumpadDirRef.current = "5";
     attemptStartMsRef.current = null;
     if (practiceEntry) {
       const t = parseMoveInputToTokens(practiceEntry.notation);
@@ -654,7 +558,10 @@ export function PracticeArena({
         ? "bg-yellow-400"
         : "bg-red-400";
 
-    return (
+  // Calculate the physical grid focus irrespective of character facings
+  const physicalNumpad = getActiveDirectionNumpad(activeKeys, "right");
+
+  return (
     <div ref={arenaRef} className="bg-[#0d1f35] border border-blue-500/30 rounded-xl overflow-hidden relative">
       <style>{`
         @keyframes slideInFade {
@@ -723,19 +630,17 @@ export function PracticeArena({
             <div className="flex items-start gap-8 mb-6">
               <div className="flex-shrink-0">
                 <div className="grid grid-cols-3 gap-1 w-fit">
-                  {["↖", "↑", "↗", "←", "●", "→", "↙", "↓", "↘"].map((dir) => {
-                    const isPressed = [...activeKeys].some((key) => {
-                      const mapped = KEY_TO_DIRECTION[key];
-                      return mapped === dir;
-                    });
+                  {["7", "8", "9", "4", "5", "6", "1", "2", "3"].map((dirNumpad) => {
+                    const isPressed = physicalNumpad === dirNumpad;
+                    const label = tokenDisplayLabel(dirNumpad);
                     return (
                       <div
-                        key={dir}
+                        key={dirNumpad}
                         className={`w-10 h-10 rounded-md flex items-center justify-center text-sm transition-colors ${
                           isPressed ? "bg-blue-500 text-white" : "bg-slate-700/50 text-slate-400"
                         }`}
                       >
-                        {dir}
+                        {label}
                       </div>
                     );
                   })}
@@ -784,31 +689,40 @@ export function PracticeArena({
                         : "bg-blue-600 border border-blue-400 text-white"
                     }`}
                   >
-                    {input.symbol}
+                    {tokenDisplayLabel(input.symbol)}
                   </div>
                 ))}
               </div>
             </div>
-
-            {recentMotion && (
-              <div className="text-sm text-blue-300 mb-2">
-                Most Recent Input: {recentMotion}
-              </div>
-            )}
-
-            {matchedMove && (
-              <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
-                <p className="text-green-400 text-sm">
-                  Move Detected: <strong>{matchedMove.name}</strong> ({matchedMove.input})
-                </p>
-              </div>
-            )}
           </>
         )}
 
         <div className="mt-6">
           <div className="flex items-center justify-between mb-1">
-            <h4 className="text-slate-300">Move and combo list</h4>
+            <div className="flex items-center gap-2">
+              <h4 className="text-slate-300">Move and combo list</h4>
+              <div className="group relative flex items-center">
+                <HelpCircle size={15} className="text-slate-500 cursor-help hover:text-blue-400 transition-colors" />
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-slate-800 border border-slate-600 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 pointer-events-none">
+                  <p className="text-sm text-blue-300 font-semibold mb-1">Numpad Notation (Right-Facing)</p>
+                  <p className="text-xs text-slate-400 mb-3 leading-tight">
+                    Numbers correspond to directions on a PC numpad, assuming your character is facing right.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 text-center text-xs font-mono text-slate-300 bg-slate-900/50 p-2 rounded">
+                    <div>
+                      7 8 9<br/>
+                      4 5 6<br/>
+                      1 2 3
+                    </div>
+                    <div>
+                      ↖ ↑ ↗<br/>
+                      ← ● →<br/>
+                      ↙ ↓ ↘
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
             {user && (
               <span className="text-sm font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 shadow-[0_0_10px_rgba(52,211,153,0.15)] flex items-center gap-1.5">
                 <Check size={14} />
