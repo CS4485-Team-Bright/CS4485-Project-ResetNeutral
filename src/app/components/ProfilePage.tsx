@@ -121,8 +121,12 @@ export function ProfilePage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap');
+      `}</style>
+    
       <div className="mb-8">
-        <h1 className="text-white text-3xl font-bold tracking-wide">Player Profile</h1>
+        <h1 className="text-white text-3xl font-bold tracking-wide font-['Orbitron']">Player Profile</h1>
         <p className="text-slate-400 mt-1">Manage your account and track your character mastery progress.</p>
       </div>
 
@@ -130,7 +134,7 @@ export function ProfilePage() {
       <div className="bg-[#0d1f35] border border-blue-500/30 rounded-xl overflow-hidden mb-8 shadow-lg">
         <div className="p-4 border-b border-blue-500/20 flex items-center gap-2">
           <User className="text-blue-400" size={20} />
-          <h3 className="text-white font-semibold">Account Details</h3>
+          <h3 className="text-white font-semibold font-['Orbitron']">Account Details</h3>
         </div>
         
         <div className="p-6">
@@ -146,7 +150,7 @@ export function ProfilePage() {
                 />
                 <button 
                   onClick={saveName} 
-                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white px-5 py-2 rounded-lg font-medium transition-colors border border-blue-500 shadow-md shadow-blue-900/20"
+                  className="flex items-center gap-2 text-sm font-semibold text-blue-400 bg-blue-500/10 px-5 py-2 rounded-lg border border-blue-500/20 shadow-[0_0_10px_rgba(59,130,246,0.15)] hover:bg-blue-500/20 hover:text-blue-300 hover:shadow-[0_0_15px_rgba(59,130,246,0.25)] transition-all font-['Orbitron']"
                 >
                   <Save size={16} />
                   Save
@@ -166,7 +170,7 @@ export function ProfilePage() {
       <div className="bg-[#0d1f35] border border-blue-500/30 rounded-xl overflow-hidden shadow-lg">
         <div className="p-4 border-b border-blue-500/20 flex items-center gap-2">
           <Gamepad2 className="text-blue-400" size={20} />
-          <h3 className="text-white font-semibold">Game Mastery</h3>
+          <h3 className="text-white font-semibold font-['Orbitron']">Game Mastery</h3>
         </div>
 
         <div className="p-6">
@@ -195,16 +199,16 @@ export function ProfilePage() {
                     onClick={() => setExpandedGameId(isOpen ? null : game.id)}
                   >
                     <div className="flex items-center gap-3">
-                      <span className="text-white font-semibold text-lg">{game.name}</span>
+                      <span className="text-white font-semibold text-lg font-['Orbitron']">{game.name}</span>
                     </div>
                     <div className="flex items-center gap-4">
                       {gamePct > 0 ? (
-                        <span className="text-sm font-semibold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded border border-emerald-500/20 shadow-[0_0_10px_rgba(52,211,153,0.15)] flex items-center gap-1.5">
+                        <span className="text-sm font-semibold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded border border-emerald-500/20 shadow-[0_0_10px_rgba(52,211,153,0.15)] flex items-center gap-1.5 font-['Orbitron']">
                           <Check size={14} />
                           Mastery: {gamePct}%
                         </span>
                       ) : (
-                         <span className="text-sm font-medium text-slate-500 bg-slate-800/80 px-2.5 py-1 rounded border border-slate-700 flex items-center gap-1.5">
+                         <span className="text-sm font-medium text-slate-500 bg-slate-800/80 px-2.5 py-1 rounded border border-slate-700 flex items-center gap-1.5 font-['Orbitron']">
                            Mastery: 0%
                          </span>
                       )}
@@ -254,11 +258,11 @@ export function ProfilePage() {
                                 )}
                               </div>
                             </div>
-                            <p className="text-slate-300 text-sm font-medium truncate w-full text-center group-hover:text-white transition-colors mb-0.5">{character.name}</p>
+                            <p className="text-slate-300 text-sm font-medium truncate w-full text-center group-hover:text-white transition-colors mb-0.5 font-['Orbitron']">{character.name}</p>
                             {pct > 0 ? (
-                              <p className="text-emerald-400 text-xs font-bold tracking-wide">{pct}%</p>
+                              <p className="text-emerald-400 text-xs font-bold tracking-wide font-['Orbitron']">{pct}%</p>
                             ) : (
-                              <p className="text-slate-600 text-xs font-medium tracking-wide">0%</p>
+                              <p className="text-slate-600 text-xs font-medium tracking-wide font-['Orbitron']">0%</p>
                             )}
                           </Link>
                         );
