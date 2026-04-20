@@ -4,6 +4,60 @@ import { Trash2, RotateCcw, Check, X, Clock, Zap } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useUserMoveMastery, useUserComboMastery, recordMoveAttempt } from "../hooks/useMastery";
 
+// --- AUDIO ENGINE ---
+let audioCtx: AudioContext | null = null;
+
+function playAudioFeedback(type: "success" | "fail", chainIndex: number = 0) {
+  try {
+    if (!audioCtx) {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      audioCtx = new AudioCtx();
+    }
+    
+    // Some browsers suspend audio context until user interaction
+    if (audioCtx.state === "suspended") {
+      audioCtx.resume();
+    }
+
+    const osc = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+
+    osc.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    if (type === "success") {
+      // Base frequency A4 (440Hz). Pitches up a whole tone (2 semitones) per correct combo step sequentially.
+      const freq = 440 * Math.pow(2, (chainIndex * 2) / 12);
+      
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      
+      // Clean, plucky envelope
+      gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.01);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+      
+      osc.start(audioCtx.currentTime);
+      osc.stop(audioCtx.currentTime + 0.15);
+    } else {
+      // Dull "bzzzt" for failure
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+      
+      gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime + 0.02);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+      
+      osc.start(audioCtx.currentTime);
+      osc.stop(audioCtx.currentTime + 0.25);
+    }
+  } catch (e) {
+    // Gracefully ignore, browser likely blocked audio
+  }
+}
+// --------------------
+
 /** First variant before "or", strip notes like (charged), j., charge brackets -> digits */
 function parseMoveInputToTokens(raw: string): string[] {
   let s = raw.split(/\s+or\s+/i)[0].trim();
@@ -307,6 +361,8 @@ export function PracticeArena({
       setTooSlowMessage(true);
       setTimerProgress(0);
       setIsResettingPractice(true);
+      
+      playAudioFeedback("fail");
 
       await recordResult(false);
 
@@ -425,6 +481,7 @@ export function PracticeArena({
     if (expected === "5") {
       if (last.type === "direction") {
         markStep(idx, "fail");
+        playAudioFeedback("fail");
         void resetPracticeSoon(700, false);
         return;
       }
@@ -432,11 +489,13 @@ export function PracticeArena({
       const hasDirectionHeld = [...activeKeys].some((key) => KEY_TO_DIRECTION[key] !== undefined);
       if (hasDirectionHeld) {
         markStep(idx, "fail");
+        playAudioFeedback("fail");
         void resetPracticeSoon(700, false);
         return;
       }
 
       markStep(idx, "success");
+      playAudioFeedback("success", idx);
       const nextIdx = idx + 1;
       practiceIndexRef.current = nextIdx;
 
@@ -449,6 +508,7 @@ export function PracticeArena({
       const nextExpected = practiceTokens[nextIdx];
       if (gotDiagonal === nextExpected || gotBase === nextExpected) {
         markStep(nextIdx, "success");
+        playAudioFeedback("success", nextIdx);
         practiceIndexRef.current = nextIdx + 1;
         if (practiceIndexRef.current >= practiceTokens.length) {
           void resetPracticeSoon(1000, true);
@@ -457,6 +517,7 @@ export function PracticeArena({
         }
       } else {
         markStep(nextIdx, "fail");
+        playAudioFeedback("fail");
         void resetPracticeSoon(700, false);
       }
       return;
@@ -464,6 +525,7 @@ export function PracticeArena({
 
     if (gotDiagonal === expected || gotBase === expected) {
       markStep(idx, "success");
+      playAudioFeedback("success", idx);
       practiceIndexRef.current = idx + 1;
       if (practiceIndexRef.current >= practiceTokens.length) {
         void resetPracticeSoon(1000, true);
@@ -472,6 +534,7 @@ export function PracticeArena({
       }
     } else {
       markStep(idx, "fail");
+      playAudioFeedback("fail");
       void resetPracticeSoon(700, false);
     }
   }, [inputHistory, practiceEntry, practiceTokens, activeKeys, isResettingPractice, startInputTimer, stopInputTimer, recordResult]);
