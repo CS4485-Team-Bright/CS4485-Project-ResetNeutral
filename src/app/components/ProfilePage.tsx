@@ -126,7 +126,7 @@ export function ProfilePage() {
       `}</style>
     
       <div className="mb-8">
-        <h1 className="text-white text-3xl font-bold tracking-wide font-['Orbitron']">Player Profile</h1>
+        <h1 className="text-white text-3xl font-bold tracking-wide font-['Orbitron']">Profile</h1>
         <p className="text-slate-400 mt-1">Manage your account and track your character mastery progress.</p>
       </div>
 
@@ -140,12 +140,12 @@ export function ProfilePage() {
         <div className="p-6">
           <div className="max-w-md">
             <div className="mb-5">
-              <label className="block text-slate-400 text-sm font-medium mb-2">Display Name</label>
+              <label className="block text-slate-400 text-sm font-medium mb-2 font-['Orbitron']">Display Name</label>
               <div className="flex gap-3">
                 <input
                   value={usernameDraft}
                   onChange={(e) => setUsernameDraft(e.target.value)}
-                  className="flex-1 rounded-lg bg-[#0a1628] border border-slate-700 hover:border-blue-500/50 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white px-4 py-2 transition-all outline-none"
+                  className="flex-1 rounded-lg bg-[#0a1628] border border-slate-700 hover:border-blue-500/50 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white px-4 py-2 transition-all outline-none font-['Orbitron']"
                   placeholder="Enter your username"
                 />
                 <button 
@@ -159,7 +159,7 @@ export function ProfilePage() {
             </div>
             
             <div className="bg-slate-800/40 border border-slate-700/50 rounded-lg p-4">
-              <label className="block text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">Email Address</label>
+              <label className="block text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1 font-['Orbitron']">Email Address</label>
               <p className="text-slate-300 font-medium">{profile?.email ?? user.email}</p>
             </div>
           </div>
@@ -174,7 +174,7 @@ export function ProfilePage() {
         </div>
 
         <div className="p-6">
-          <p className="text-slate-400 text-sm mb-5">
+          <p className="text-slate-400 text-sm mb-5 font-['Orbitron']">
             Select a game below to view your mastery percentage for each character. Master moves in the Practice Arena to fill your rings!
           </p>
 
@@ -231,11 +231,11 @@ export function ProfilePage() {
                             key={character.id} 
                             className="flex flex-col items-center p-3 rounded-xl hover:bg-white/5 transition-colors group cursor-pointer"
                           >
-                            <div className="relative w-24 h-24 mb-3 rounded-xl overflow-hidden bg-black border border-slate-700 transition-transform duration-300 group-hover:scale-105 group-hover:border-emerald-500/50 group-hover:shadow-[0_0_15px_rgba(52,211,153,0.4)]">
+                            <div className="relative w-24 h-24 mb-3 rounded-xl overflow-hidden bg-[#0d1f35] border border-slate-700 transition-transform duration-300 group-hover:scale-105 group-hover:border-emerald-500/50 group-hover:shadow-[0_0_15px_rgba(52,211,153,0.4)]">
                               {/* rising border fill */}
                               {pct > 0 && pct < 100 && (
                                 <div
-                                  className="absolute inset-0 bg-gradient-to-t from-green-600 to-emerald-400 opacity-90"
+                                  className="absolute inset-0 bg-gradient-to-t from-emerald-700 to-emerald-300"
                                   style={{ clipPath: `inset(${100 - pct}% 0 0 0)` }}
                                 />
                               )}
@@ -251,7 +251,7 @@ export function ProfilePage() {
                                   <img 
                                     src={character.image} 
                                     alt={character.name} 
-                                    className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 ${pct === 100 ? 'brightness-110 contrast-110' : ''}`} 
+                                    className={`w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-110 ${pct === 100 ? 'brightness-110 contrast-110' : ''}`} 
                                   />
                                 ) : (
                                   <span className="text-2xl transition-transform duration-500 group-hover:scale-110">??</span>

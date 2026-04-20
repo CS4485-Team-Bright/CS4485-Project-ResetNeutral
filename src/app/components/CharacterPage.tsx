@@ -58,7 +58,7 @@ export function CharacterPage() {
       <div className="relative border-b border-blue-500/15 overflow-hidden">
         {character.banner && (
           <div className="absolute inset-0 opacity-20">
-            <img src={character.banner} alt="" className="w-full h-full object-cover" />
+            <img src={character.banner} alt="" className="w-full h-full object-cover object-top" />
             <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent" />
           </div>
         )}

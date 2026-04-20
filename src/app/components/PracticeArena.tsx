@@ -621,11 +621,19 @@ export function PracticeArena({
         {!isActive && (
           <button
             onClick={() => setIsActive(true)}
-            className="w-full py-8 rounded-xl border-2 border-dashed border-blue-500/40 bg-blue-500/5 hover:bg-blue-500/10 transition-colors text-center mb-4"
+            className="w-full py-8 rounded-xl border border-blue-500/40 bg-blue-500/5 hover:bg-blue-500/10 transition-all text-center mb-4 shadow-[0_0_20px_rgba(59,130,246,0.1)] hover:shadow-[0_0_25px_rgba(59,130,246,0.2)] group relative overflow-hidden"
           >
-            <p className="text-blue-400 mb-1">Click to activate Practice Arena</p>
-            <p className="text-slate-500 text-sm">
-              Use arrow keys / WASD for directions, J/K/L/; for P/K/S/H, U/I for L/M
+            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-blue-400/80 to-transparent group-hover:via-blue-400 transition-all" />
+            <div className="absolute inset-x-0 bottom-0 h-[2px] bg-gradient-to-r from-transparent via-blue-400/80 to-transparent group-hover:via-blue-400 transition-all" />
+            <div className="absolute inset-y-0 left-0 w-[2px] bg-gradient-to-b from-transparent via-blue-400/80 to-transparent group-hover:via-blue-400 transition-all" />
+            <div className="absolute inset-y-0 right-0 w-[2px] bg-gradient-to-b from-transparent via-blue-400/80 to-transparent group-hover:via-blue-400 transition-all" />
+            
+            <p className="text-blue-400 mb-2 font-['Orbitron'] tracking-wider text-lg font-bold group-hover:text-blue-300 transition-colors">
+              Click to activate Practice Arena
+            </p>
+            <p className="text-slate-400 text-sm max-w-lg mx-auto leading-relaxed">
+              Use <span className="text-slate-300 font-mono bg-slate-800/80 px-1 rounded border border-slate-700">arrow keys</span> or <span className="text-slate-300 font-mono bg-slate-800/80 px-1 rounded border border-slate-700">WASD</span> for directions<br/>
+              <span className="text-slate-300 font-mono bg-slate-800/80 px-1 rounded border border-slate-700">J/K/L/;</span> for P/K/S/H, <span className="text-slate-300 font-mono bg-slate-800/80 px-1 rounded border border-slate-700">U/I</span> for L/M
             </p>
           </button>
         )}
@@ -672,15 +680,16 @@ export function PracticeArena({
 
               <div className="grid grid-cols-3 gap-1">
                 {[
-                  { label: "L (U)", key: "u" },
-                  { label: "M (I)", key: "i" },
-                  { label: "", key: "" },
-                  { label: "P (J)", key: "j" },
-                  { label: "K (K)", key: "k" },
-                  { label: "S (L)", key: "l" },
-                  { label: "H (;)", key: ";" },
-                  { label: "", key: "" },
-                  { label: "", key: "" },
+
+                    { label: "L (U)", key: "u" },
+                    { label: "M (I)", key: "i" },
+                    { label: "", key: "" },
+                    { label: "P (J)", key: "j" },
+                    { label: "K (K)", key: "k" },
+                    { label: "S (L)", key: "l" },
+                    { label: "H (;)", key: ";" },
+                    { label: "", key: "" },
+                    { label: "", key: "" },
                 ].map((btn, i) =>
                   btn.key ? (
                     <div
