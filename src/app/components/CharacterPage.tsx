@@ -5,6 +5,19 @@ import { PracticeArena } from "./PracticeArena";
 import { useState } from "react";
 import { useCharacter } from "../hooks/useGameData";
 
+function getDifficultyBadgeStyles(difficulty: string): string {
+  switch (difficulty.toLowerCase()) {
+    case "beginner":
+      return "bg-emerald-500/20 text-emerald-200 border-emerald-400/40";
+    case "intermediate":
+      return "bg-amber-500/20 text-amber-200 border-amber-400/40";
+    case "advanced":
+      return "bg-red-500/20 text-red-200 border-red-400/40";
+    default:
+      return "bg-slate-700/70 text-slate-200 border-slate-500/60";
+  }
+}
+
 export function CharacterPage() {
   const { gameId, characterId } = useParams();
   const { game, character, loading, error } = useCharacter(gameId || "", characterId || "");
@@ -31,13 +44,13 @@ export function CharacterPage() {
         )}
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center gap-2 text-sm text-slate-400 mb-4">
-            <Link to="/games" className="hover:text-white transition-colors">Games</Link>
+            <Link to="/games" className="hover:text-white transition-colors font-['Orbitron']">Games</Link>
             <span>/</span>
-            <Link to={`/game/${game.id}`} className="hover:text-white transition-colors">
+            <Link to={`/game/${game.id}`} className="hover:text-white transition-colors font-['Orbitron']">
               {game.short_name}
             </Link>
             <span>/</span>
-            <span className="text-white">{character.name}</span>
+            <span className="text-white font-['Orbitron']">{character.name}</span>
           </div>
 
           <div className="flex flex-col md:flex-row items-start gap-6">
@@ -61,21 +74,15 @@ export function CharacterPage() {
             )}
 
             <div className="flex-1">
-              <p className="text-blue-400 text-sm">{game.name}'s {character.title}</p>
-              <h1 className="text-white mb-2">{character.name}</h1>
+              <p className="text-blue-400 text-sm font-['Orbitron']">{game.name}'s {character.title}</p>
+              <h1 className="text-white font-['Orbitron'] mb-2">{character.name}</h1>
               <p className="text-slate-300 max-w-2xl mb-4">{character.description}</p>
               <div className="flex flex-wrap items-center gap-3">
-                <span className="text-sm text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full">
+                <span className="text-sm font-['Orbitron'] tracking-wider text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full uppercase border border-blue-500/20">
                   {character.archetype}
                 </span>
                 <span
-                  className={`text-sm px-3 py-1 rounded-full ${
-                    character.difficulty === "Easy"
-                      ? "text-green-400 bg-green-500/10"
-                      : character.difficulty === "Medium"
-                        ? "text-yellow-400 bg-yellow-500/10"
-                        : "text-red-400 bg-red-500/10"
-                  }`}
+                  className={`text-sm font-['Orbitron'] tracking-wider uppercase px-3 py-1 rounded-full border ${getDifficultyBadgeStyles(character.difficulty)}`}
                 >
                   {character.difficulty}
                 </span>
@@ -89,14 +96,14 @@ export function CharacterPage() {
         <div className="grid lg:grid-cols-2 gap-8">
           <div className="space-y-8">
             <div>
-              <h2 className="text-white mb-4">Move List</h2>
+              <h2 className="text-white font-['Orbitron'] mb-4">Move List</h2>
               <div className="space-y-3">
                 {character.moves.map((move) => (
                   <div key={move.id} className="bg-[#111d33] border border-blue-500/15 rounded-xl p-4">
                     <div className="flex items-start justify-between gap-4 mb-2">
                       <div>
-                        <h4 className="text-white">{move.name}</h4>
-                        <span className="text-xs text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded">
+                        <h4 className="text-white font-['Orbitron']">{move.name}</h4>
+                        <span className="text-[10px] uppercase tracking-wide text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded">
                           {move.type}
                         </span>
                       </div>
@@ -126,20 +133,14 @@ export function CharacterPage() {
             </div>
 
             <div>
-              <h2 className="text-white mb-4">Combos</h2>
+              <h2 className="text-white font-['Orbitron'] mb-4">Combos</h2>
               <div className="space-y-3">
                 {character.combos.map((combo) => (
                   <div key={combo.id} className="bg-[#111d33] border border-blue-500/15 rounded-xl p-4">
                     <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-white">{combo.name}</h4>
+                      <h4 className="text-white font-['Orbitron']">{combo.name}</h4>
                       <span
-                        className={`text-xs px-2 py-0.5 rounded ${
-                          combo.difficulty === "Beginner"
-                            ? "text-green-400 bg-green-500/10"
-                            : combo.difficulty === "Intermediate"
-                              ? "text-yellow-400 bg-yellow-500/10"
-                              : "text-red-400 bg-red-500/10"
-                        }`}
+                        className={`text-[10px] uppercase tracking-wide border px-2 py-0.5 rounded ${getDifficultyBadgeStyles(combo.difficulty)}`}
                       >
                         {combo.difficulty}
                       </span>
@@ -149,7 +150,7 @@ export function CharacterPage() {
                     </div>
                     <div className="flex items-center justify-between text-xs text-slate-500">
                       <span>{combo.notes}</span>
-                      <span className="text-blue-400 flex-shrink-0 ml-2">{combo.damage} dmg</span>
+                      <span className="text-emerald-400 font-medium font-mono flex-shrink-0 ml-2">{combo.damage} dmg</span>
                     </div>
                   </div>
                 ))}
@@ -161,7 +162,7 @@ export function CharacterPage() {
             <div className="sticky top-4">
               <div className="bg-[#0d1f35] border border-blue-500/30 rounded-t-xl p-4 border-b-0">
                 <div className="flex items-center gap-3">
-                  <h2 className="text-white">Practice Arena</h2>
+                  <h2 className="text-white font-['Orbitron']">Practice Arena</h2>
                   <div className="flex rounded-lg overflow-hidden border border-blue-500/20">
                     <button
                       onClick={() => setFacing("right")}
@@ -197,7 +198,7 @@ export function CharacterPage() {
               </div>
               <Link
                 to={`/game/${game.id}`}
-                className="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors mt-4"
+                className="inline-flex items-center gap-2 text-slate-400 hover:text-white font-['Orbitron'] transition-colors mt-4"
               >
                 <ArrowLeft size={16} />
                 Back to {game.short_name} Characters

@@ -68,10 +68,11 @@ function parseMoveInputToTokens(raw: string): string[] {
 }
 
 function tokenDisplayLabel(t: string): string {
+  // \uFE0E forces text presentation instead of emoji rendering for OS that substitute arrows
   const n: Record<string, string> = {
-    "1": "↙", "2": "↓", "3": "↘",
-    "4": "←", "5": "●", "6": "→",
-    "7": "↖", "8": "↑", "9": "↗",
+    "1": "↙\uFE0E", "2": "↓\uFE0E", "3": "↘\uFE0E",
+    "4": "←\uFE0E", "5": "●", "6": "→\uFE0E",
+    "7": "↖\uFE0E", "8": "↑\uFE0E", "9": "↗\uFE0E",
   };
   return n[t] ?? t;
 }
@@ -106,6 +107,19 @@ function getActiveDirectionNumpad(keys: Set<string>, facing: "right" | "left"): 
 const KEY_TO_BUTTON: Record<string, string> = {
   j: "P", k: "K", l: "S", ";": "H", u: "L", i: "M",
 };
+
+function getDifficultyBadgeStyles(difficulty: string): string {
+  switch (difficulty.toLowerCase()) {
+    case "beginner":
+      return "bg-emerald-500/20 text-emerald-200 border-emerald-400/40";
+    case "intermediate":
+      return "bg-amber-500/20 text-amber-200 border-amber-400/40";
+    case "advanced":
+      return "bg-red-500/20 text-red-200 border-red-400/40";
+    default:
+      return "bg-slate-700/70 text-slate-200 border-slate-500/60";
+  }
+}
 
 interface PracticeArenaProps {
   character: Character;
@@ -369,9 +383,9 @@ export function PracticeArena({
 
     const gotDir = last.type === "direction" ? last.symbol : last.symbol.toUpperCase();
 
-    const idx = practiceIndexRef.current;
+    let idx = practiceIndexRef.current;
     if (idx >= practiceTokens.length) return;
-    const expected = practiceTokens[idx];
+    let expected = practiceTokens[idx];
 
     const resetPracticeSoon = async (ms: number, success: boolean) => {
       setIsResettingPractice(true);
@@ -401,33 +415,27 @@ export function PracticeArena({
       });
     };
 
-    // If expecting Neutral [5]
-    if (expected === "5") {
-      // If they pressed a wrong button before clearing neutral, fail
-      if (last.type === "button") {
+    // Auto-consume 5 if the user is already at neutral and presses an attack button
+    // This solves combos starting with "5MP" where you don't actively move a direction key first
+    if (expected === "5" && last.type === "button") {
+      if (getActiveDirectionNumpad(activeKeys, facing) === "5") {
+        markStep(idx, "success");
+        playAudioFeedback("success", idx);
+        idx += 1;
+        practiceIndexRef.current = idx;
+
+        if (idx >= practiceTokens.length) {
+          void resetPracticeSoon(1000, true);
+          return;
+        }
+        startInputTimer();
+        expected = practiceTokens[idx]; // Shift focus onto the button we just pressed for comparison below!
+      } else {
         markStep(idx, "fail");
         playAudioFeedback("fail");
         void resetPracticeSoon(700, false);
         return;
       }
-
-      // If they are still holding ANY direction, ignore and let the timer countdown wait for release
-      if (getActiveDirectionNumpad(activeKeys, facing) !== "5") {
-        return;
-      }
-
-      markStep(idx, "success");
-      playAudioFeedback("success", idx);
-      const nextIdx = idx + 1;
-      practiceIndexRef.current = nextIdx;
-
-      if (nextIdx >= practiceTokens.length) {
-        void resetPracticeSoon(1000, true);
-        return;
-      }
-
-      startInputTimer();
-      return;
     }
 
     // Processing normally for directional or button matches
@@ -441,7 +449,7 @@ export function PracticeArena({
         startInputTimer();
       }
     } else {
-      // **THE MAGIC FIX**: Ignore overlapping/sloppy direction inputs. 
+      // Ignore overlapping/sloppy direction inputs. 
       // Only fail immediately if they hit the wrong attack button.
       if (last.type === "direction") {
         return;
@@ -488,12 +496,10 @@ export function PracticeArena({
         const nextDir = getActiveDirectionNumpad(nextKeys, facing);
         if (nextDir !== lastNumpadDirRef.current) {
           lastNumpadDirRef.current = nextDir;
-          if (nextDir !== "5") {
-            addInput(nextDir, "direction");
-            if (practiceEntry && practiceIndexRef.current === 0 && timerStartRef.current === null) {
-              attemptStartMsRef.current = Date.now();
-              startInputTimer();
-            }
+          addInput(nextDir, "direction"); // Now tracking "5" (Neutral)
+          if (practiceEntry && practiceIndexRef.current === 0 && timerStartRef.current === null) {
+            attemptStartMsRef.current = Date.now();
+            startInputTimer();
           }
         }
       }
@@ -513,9 +519,7 @@ export function PracticeArena({
         const nextDir = getActiveDirectionNumpad(nextKeys, facing);
         if (nextDir !== lastNumpadDirRef.current) {
           lastNumpadDirRef.current = nextDir;
-          if (nextDir !== "5") {
-            addInput(nextDir, "direction");
-          }
+          addInput(nextDir, "direction"); // Now tracking "5" (Neutral)
         }
       }
     };
@@ -564,6 +568,8 @@ export function PracticeArena({
   return (
     <div ref={arenaRef} className="bg-[#0d1f35] border border-blue-500/30 rounded-xl overflow-hidden relative">
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap');
+
         @keyframes slideInFade {
           0% { opacity: 0; transform: translateX(-10px); }
           100% { opacity: 1; transform: translateX(0); }
@@ -574,7 +580,7 @@ export function PracticeArena({
       `}</style>
       
       <div className="p-4 border-b border-blue-500/20 flex items-center justify-between">
-        <h3 className="text-white">
+        <h3 className="text-white font-['Orbitron']">
           Practice Arena ({facing === "right" ? "Right Facing" : "Left Facing"})
         </h3>
         <div className="flex items-center gap-2">
@@ -613,17 +619,21 @@ export function PracticeArena({
 
         {isActive && (
           <>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-              <span className="text-green-400 text-sm">Arena Active</span>
-              <span className="text-slate-500 text-sm ml-2">
-                Arrows/WASD = Directions | J=P K=K L=S ;=H U=L I=M
-              </span>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 bg-slate-800/30 p-3 rounded-xl border border-slate-700/50">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 shadow-[0_0_10px_rgba(52,211,153,0.15)] flex-shrink-0">
+                  <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_5px_rgba(52,211,153,0.8)]" />
+                  <span className="text-emerald-400 text-xs font-bold uppercase tracking-wider font-['Orbitron']">Arena Active</span>
+                </div>
+                <span className="text-slate-400 text-xs hidden md:inline-block font-medium">
+                  Arrows/WASD = Directions <span className="mx-1 text-slate-600">|</span> J=P K=K L=S ;=H U=L I=M
+                </span>
+              </div>
               <button
                 onClick={() => setIsActive(false)}
-                className="ml-auto text-slate-500 hover:text-slate-300 text-sm flex items-center gap-1"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all shadow-[0_0_10px_rgba(239,68,68,0.15)] text-xs font-bold uppercase tracking-wider font-['Orbitron'] flex-shrink-0"
               >
-                <RotateCcw size={14} /> Deactivate
+                <RotateCcw size={14} strokeWidth={2.5} /> Deactivate
               </button>
             </div>
 
@@ -636,7 +646,7 @@ export function PracticeArena({
                     return (
                       <div
                         key={dirNumpad}
-                        className={`w-10 h-10 rounded-md flex items-center justify-center text-sm transition-colors ${
+                        className={`w-10 h-10 rounded-md flex items-center justify-center font-mono text-sm transition-colors ${
                           isPressed ? "bg-blue-500 text-white" : "bg-slate-700/50 text-slate-400"
                         }`}
                       >
@@ -683,7 +693,7 @@ export function PracticeArena({
                 {recentDisplay.map((input, i) => (
                   <div
                     key={i}
-                    className={`w-8 h-8 rounded flex items-center justify-center text-xs ${
+                    className={`w-8 h-8 rounded flex items-center justify-center font-mono text-xs ${
                       input.type === "direction"
                         ? "bg-slate-700 border border-slate-500 text-white"
                         : "bg-blue-600 border border-blue-400 text-white"
@@ -700,7 +710,7 @@ export function PracticeArena({
         <div className="mt-6">
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2">
-              <h4 className="text-slate-300">Move and combo list</h4>
+              <h4 className="text-white font-['Orbitron']">Move and combo list</h4>
               <div className="group relative flex items-center">
                 <HelpCircle size={15} className="text-slate-500 cursor-help hover:text-blue-400 transition-colors" />
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-slate-800 border border-slate-600 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 pointer-events-none">
@@ -724,7 +734,7 @@ export function PracticeArena({
               </div>
             </div>
             {user && (
-              <span className="text-sm font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 shadow-[0_0_10px_rgba(52,211,153,0.15)] flex items-center gap-1.5">
+              <span className="text-sm font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 shadow-[0_0_10px_rgba(52,211,153,0.15)] flex items-center gap-1.5 font-['Orbitron']">
                 <Check size={14} />
                 Mastery: {characterMasteryPct}%
               </span>
@@ -739,17 +749,25 @@ export function PracticeArena({
           {practiceEntry && practiceTokens.length > 0 && (
             <div className="mb-4 rounded-lg border border-blue-500/30 bg-[#0a1628] p-4 shadow-inner">
               <p className="text-slate-400 text-sm flex items-center gap-2 mb-1">
-                <span>Practicing: <span className="text-white font-semibold">{practiceEntry.name}</span></span>
-                <span className="text-blue-300 text-[10px] uppercase tracking-wide bg-blue-500/10 px-1.5 py-0.5 rounded">{practiceEntry.kind}</span>
+                <span>Practicing: <span className="text-white font-semibold font-['Orbitron']">{practiceEntry.name}</span></span>
+                {practiceEntry.kind === "move" && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded uppercase tracking-wide bg-blue-500/20 text-blue-200 border border-blue-400/40">
+                    move
+                  </span>
+                )}
+                {practiceEntry.kind === "combo" && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded uppercase tracking-wide bg-purple-500/25 text-purple-200 border border-purple-400/40">
+                    combo
+                  </span>
+                )}
                 {practiceEntry.kind === "combo" && practiceEntry.difficulty && (
-                  <span className="text-purple-300 text-[10px] uppercase tracking-wide bg-purple-500/10 px-1.5 py-0.5 rounded">
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded uppercase tracking-wide border ${getDifficultyBadgeStyles(practiceEntry.difficulty)}`}>
                     {practiceEntry.difficulty}
                   </span>
                 )}
                 <span className="text-slate-500 font-mono text-xs">{practiceEntry.notation}</span>
               </p>
               
-              {/* STREAK & BEST TIME VISUALIZER */}
               {user && (
                 <div className="flex flex-col gap-2 mt-2 mb-3 w-fit">
                   <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-700/50 bg-slate-800/40">
@@ -771,7 +789,7 @@ export function PracticeArena({
                         />
                       ))}
                     </div>
-                    {isMastered && <span className="text-[10px] text-emerald-400 ml-1 font-bold uppercase tracking-wider animate-slide-in-fade">Mastered!</span>}
+                    {isMastered && <span className="text-[10px] text-emerald-400 ml-1 font-bold uppercase tracking-wider animate-slide-in-fade font-['Orbitron']">Mastered!</span>}
                   </div>
                   
                   {localBestTime !== null && (
@@ -872,9 +890,9 @@ export function PracticeArena({
                   }`}
                 >
                   <div className="flex min-w-0 items-center gap-2">
-                    <span className="text-white text-sm font-medium truncate">{entry.name}</span>
+                    <span className="text-white text-sm font-medium truncate font-['Orbitron']">{entry.name}</span>
                     {isMoveMastered && (
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 ml-1 animate-slide-in-fade">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 ml-1 animate-slide-in-fade font-['Orbitron']">
                         Mastered!
                       </span>
                     )}
@@ -891,7 +909,7 @@ export function PracticeArena({
           {practiceCombos.length > 0 && (
             <>
               <div className="my-4 border-t border-blue-500/25" />
-              <p className="text-slate-400 text-xs uppercase tracking-wider mb-2">Combos</p>
+              <p className="text-white font-['Orbitron'] tracking-wider mb-2">Combos</p>
               <div className="space-y-2">
                 {practiceCombos.map((entry, entryIdx) => {
                   const selected =
@@ -926,9 +944,9 @@ export function PracticeArena({
                       }`}
                     >
                       <div className="flex min-w-0 items-center gap-2">
-                        <span className="text-white text-sm font-medium truncate">{entry.name}</span>
+                        <span className="text-white text-sm font-medium truncate font-['Orbitron']">{entry.name}</span>
                         {isComboMastered && (
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 ml-1 animate-slide-in-fade">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 ml-1 animate-slide-in-fade font-['Orbitron']">
                             Mastered!
                           </span>
                         )}
@@ -936,7 +954,7 @@ export function PracticeArena({
                           combo
                         </span>
                         {entry.difficulty && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded uppercase tracking-wide bg-slate-700/70 text-slate-200 border border-slate-500/60">
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded uppercase tracking-wide border ${getDifficultyBadgeStyles(entry.difficulty)}`}>
                             {entry.difficulty}
                           </span>
                         )}
