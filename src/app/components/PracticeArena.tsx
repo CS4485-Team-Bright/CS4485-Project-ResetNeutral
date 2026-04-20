@@ -189,16 +189,29 @@ export function PracticeArena({
   
   const lastNumpadDirRef = useRef<string>("5");
 
-  const practiceMoves = useMemo<PracticeEntry[]>(
-    () =>
-      character.moves.map((move) => ({
-        kind: "move" as const,
-        id: move.id,
-        name: move.name,
-        notation: move.input,
-      })),
-    [character.moves]
-  );
+  const practiceMoves = useMemo<PracticeEntry[]>(() => {
+    const getWeight = (type: string) => {
+      const t = (type || "").toLowerCase();
+      if (t.includes("normal") && !t.includes("command")) return 1;
+      if (t.includes("command normal") || t.includes("unique")) return 2;
+      if (t.includes("special")) return 3;
+      if (t.includes("super 1") || t.includes("super art 1")) return 4;
+      if (t.includes("super 2") || t.includes("super art 2")) return 5;
+      if (t.includes("super 3") || t.includes("super art 3")) return 6;
+      if (t.includes("ultimate") || t.includes("critical")) return 7;
+      if (t.includes("super")) return 8; // generic super fallback
+      return 99; // unknown types fallback to the end
+    };
+
+    const sortedMoves = [...(character.moves || [])].sort((a, b) => getWeight(a.type) - getWeight(b.type));
+
+    return sortedMoves.map((move) => ({
+      kind: "move" as const,
+      id: move.id,
+      name: move.name,
+      notation: move.input,
+    }));
+  }, [character.moves]);
 
   const practiceCombos = useMemo<PracticeEntry[]>(
     () =>

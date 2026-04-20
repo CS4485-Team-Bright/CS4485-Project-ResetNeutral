@@ -2,7 +2,7 @@ import { useParams, Link, Navigate } from "react-router";
 import { ArrowLeft } from "lucide-react";
 import { InputDisplay } from "./InputDisplay";
 import { PracticeArena } from "./PracticeArena";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useCharacter } from "../hooks/useGameData";
 
 function getDifficultyBadgeStyles(difficulty: string): string {
@@ -22,6 +22,26 @@ export function CharacterPage() {
   const { gameId, characterId } = useParams();
   const { game, character, loading, error } = useCharacter(gameId || "", characterId || "");
   const [facing, setFacing] = useState<"right" | "left">("right");
+
+  // Determine the display order for moves universally
+  const sortedMoves = useMemo(() => {
+    if (!character?.moves) return [];
+    
+    const getWeight = (type: string) => {
+      const t = (type || "").toLowerCase();
+      if (t.includes("normal") && !t.includes("command")) return 1;
+      if (t.includes("command normal") || t.includes("unique")) return 2;
+      if (t.includes("special")) return 3;
+      if (t.includes("super 1") || t.includes("super art 1")) return 4;
+      if (t.includes("super 2") || t.includes("super art 2")) return 5;
+      if (t.includes("super 3") || t.includes("super art 3")) return 6;
+      if (t.includes("ultimate") || t.includes("critical")) return 7;
+      if (t.includes("super")) return 8; // generic super fallback
+      return 99; // unknown types fallback to the end
+    };
+
+    return [...character.moves].sort((a, b) => getWeight(a.type) - getWeight(b.type));
+  }, [character?.moves]);
 
   if (loading) {
     return (
@@ -98,7 +118,7 @@ export function CharacterPage() {
             <div>
               <h2 className="text-white font-['Orbitron'] mb-4">Move List</h2>
               <div className="space-y-3">
-                {character.moves.map((move) => (
+                {sortedMoves.map((move) => (
                   <div key={move.id} className="bg-[#111d33] border border-blue-500/15 rounded-xl p-4">
                     <div className="flex items-start justify-between gap-4 mb-2">
                       <div>
@@ -110,8 +130,8 @@ export function CharacterPage() {
                       <InputDisplay input={move.input} size="sm" />
                     </div>
                     {move.gif ? (
-                      <div className="mt-3 mb-3 rounded-lg overflow-hidden border border-blue-500/20 bg-[#0a1628]">
-                        <img src={move.gif} alt={`${move.name} demonstration`} className="w-full h-auto" />
+                      <div className="mt-3 mb-3 rounded-lg overflow-hidden border border-blue-500/20 bg-[#0a1628] flex justify-center bg-black/40">
+                        <img src={move.gif} alt={`${move.name} demonstration`} className="max-w-full max-h-64 object-contain" />
                       </div>
                     ) : (
                       <div className="mt-3 mb-3 rounded-lg overflow-hidden border border-blue-500/20 bg-[#0a1628] aspect-video flex items-center justify-center">
