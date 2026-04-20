@@ -73,8 +73,8 @@ export function CharacterPage() {
                     character.difficulty === "Easy"
                       ? "text-green-400 bg-green-500/10"
                       : character.difficulty === "Medium"
-                      ? "text-yellow-400 bg-yellow-500/10"
-                      : "text-red-400 bg-red-500/10"
+                        ? "text-yellow-400 bg-yellow-500/10"
+                        : "text-red-400 bg-red-500/10"
                   }`}
                 >
                   {character.difficulty}
@@ -137,8 +137,8 @@ export function CharacterPage() {
                           combo.difficulty === "Beginner"
                             ? "text-green-400 bg-green-500/10"
                             : combo.difficulty === "Intermediate"
-                            ? "text-yellow-400 bg-yellow-500/10"
-                            : "text-red-400 bg-red-500/10"
+                              ? "text-yellow-400 bg-yellow-500/10"
+                              : "text-red-400 bg-red-500/10"
                         }`}
                       >
                         {combo.difficulty}
@@ -166,7 +166,9 @@ export function CharacterPage() {
                     <button
                       onClick={() => setFacing("right")}
                       className={`px-3 py-1 text-sm transition-colors ${
-                        facing === "right" ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-400 hover:text-white"
+                        facing === "right"
+                          ? "bg-blue-600 text-white"
+                          : "bg-slate-800 text-slate-400 hover:text-white"
                       }`}
                     >
                       → Right
@@ -174,7 +176,9 @@ export function CharacterPage() {
                     <button
                       onClick={() => setFacing("left")}
                       className={`px-3 py-1 text-sm transition-colors ${
-                        facing === "left" ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-400 hover:text-white"
+                        facing === "left"
+                          ? "bg-blue-600 text-white"
+                          : "bg-slate-800 text-slate-400 hover:text-white"
                       }`}
                     >
                       ← Left
@@ -185,6 +189,7 @@ export function CharacterPage() {
               <div className="rounded-t-none overflow-hidden">
                 <PracticeArena
                   character={character}
+                  gameId={game.id}
                   facing={facing}
                   inputWindowMs={game.input_window_ms}
                   comboLinkWindowMs={game.combo_link_window_ms}

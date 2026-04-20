@@ -1,10 +1,12 @@
 import { createBrowserRouter } from "react-router";
+import { Outlet } from "react-router";
 import { Navbar } from "./components/Navbar";
 import { HomePage } from "./components/HomePage";
 import { GamesListPage } from "./components/GamesListPage";
 import { GamePage } from "./components/GamePage";
 import { CharacterPage } from "./components/CharacterPage";
-import { Outlet } from "react-router";
+import { AuthPage } from "./components/AuthPage";
+import { ProfilePage } from "./components/ProfilePage";
 
 function Layout() {
   return (
@@ -32,6 +34,8 @@ export const router = createBrowserRouter([
     Component: Layout,
     children: [
       { index: true, Component: HomePage },
+      { path: "auth", Component: AuthPage },
+      { path: "profile", Component: ProfilePage },
       { path: "games", Component: GamesListPage },
       { path: "game/:gameId", Component: GamePage },
       { path: "game/:gameId/character/:characterId", Component: CharacterPage },
