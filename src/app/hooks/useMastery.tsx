@@ -184,3 +184,15 @@ export async function recordMoveAttempt({
     .eq("user_id", userId)
     .eq(idField, idValue);
 }
+
+export async function resetAllUserMastery(userId: string) {
+  // Delete all rows across both moves and combos
+  const { error: moveError } = await supabase.from("user_move_mastery").delete().eq("user_id", userId);
+  const { error: comboError } = await supabase.from("user_combo_mastery").delete().eq("user_id", userId);
+  
+  if (moveError) console.error("Failed to delete moves:", moveError);
+  if (comboError) console.error("Failed to delete combos:", comboError);
+  
+  // Reload the page to clear out any in-memory state
+  window.location.reload();
+}

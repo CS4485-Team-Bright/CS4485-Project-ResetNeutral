@@ -250,6 +250,24 @@ export function ProfilePage() {
         </div>
       </div>
 
+      {/* EMPTY STATE CTA */}
+      {totalItemsCount > 0 && masteredItemsCount === 0 && (
+        <div className="mb-8 rounded-xl border border-blue-500/40 bg-[#0a1628] p-8 text-center shadow-[0_0_25px_rgba(59,130,246,0.15)] relative overflow-hidden group">
+          <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-blue-400/80 to-transparent mix-blend-overlay" />
+          <h2 className="text-2xl font-bold text-white mb-2 font-['Orbitron']">Ready to begin your journey?</h2>
+          <p className="text-slate-400 mb-6 max-w-lg mx-auto font-['Orbitron'] text-sm tracking-wide">
+            You haven't mastered any moves or combos yet. Step into the arena and choose a game!
+          </p>
+          <Link 
+            to="/games" 
+            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-lg font-bold font-['Orbitron'] tracking-widest uppercase transition-all shadow-[0_0_15px_rgba(59,130,246,0.4)] hover:shadow-[0_0_25px_rgba(59,130,246,0.6)] group-hover:scale-105"
+          >
+            <Play size={18} fill="currentColor" />
+            Start Practicing
+          </Link>
+        </div>
+      )}
+
       {/* STATS SECTION */}
       <div className="bg-[#0d1f35] border border-blue-500/30 rounded-xl overflow-hidden mb-8 shadow-lg">
         <div className="p-4 border-b border-blue-500/20 flex items-center gap-2">
@@ -375,24 +393,6 @@ export function ProfilePage() {
               </div>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* EMPTY STATE CTA */}
-      {totalItemsCount > 0 && masteredItemsCount === 0 && (
-        <div className="mb-8 rounded-xl border border-blue-500/40 bg-[#0a1628] p-8 text-center shadow-[0_0_25px_rgba(59,130,246,0.15)] relative overflow-hidden group">
-          <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-blue-400/80 to-transparent mix-blend-overlay" />
-          <h2 className="text-2xl font-bold text-white mb-2 font-['Orbitron']">Ready to begin your journey?</h2>
-          <p className="text-slate-400 mb-6 max-w-lg mx-auto font-['Orbitron'] text-sm tracking-wide">
-            You haven't mastered any moves or combos yet. Step into the arena, choose a game, and start filling those rings with neon green!
-          </p>
-          <Link 
-            to="/games" 
-            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-lg font-bold font-['Orbitron'] tracking-widest uppercase transition-all shadow-[0_0_15px_rgba(59,130,246,0.4)] hover:shadow-[0_0_25px_rgba(59,130,246,0.6)] group-hover:scale-105"
-          >
-            <Play size={18} fill="currentColor" />
-            Start Practicing
-          </Link>
         </div>
       )}
 
