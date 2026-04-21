@@ -781,9 +781,14 @@ export function PracticeArena({
           Practice Arena ({facing === "right" ? "Right Facing" : "Left Facing"})
         </h3>
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 text-xs text-slate-500">
+          <div className="group relative flex items-center gap-1.5 text-xs text-slate-500 cursor-help">
             <Clock size={12} />
             <span>{practiceEntry?.kind === "combo" ? comboLinkWindowMs : inputWindowMs}ms</span>
+            <div className="absolute top-full right-0 mt-2 w-48 p-2 bg-slate-800 border border-slate-600 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none text-center">
+              <p className="text-[10px] text-slate-300 leading-tight">
+                Maximum time allowed between inputs for a successful sequence.
+              </p>
+            </div>
           </div>
           <button
             onClick={clearHistory}

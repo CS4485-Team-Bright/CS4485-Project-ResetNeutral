@@ -3,10 +3,10 @@ import { Navigate, Link } from "react-router";
 import { supabase } from "../api/client";
 import { useAuth } from "../hooks/useAuth";
 import { useUserMoveMastery, useUserComboMastery } from "../hooks/useMastery";
-import { ChevronDown, User, Gamepad2, Check, Save, Trophy, Play, ArrowDownAZ, SortAsc, SortDesc } from "lucide-react";
+import { ChevronDown, User, Gamepad2, Check, Save, Trophy, Play, ArrowDownAZ, SortAsc, SortDesc, Flame, Zap, Activity } from "lucide-react";
 
-type MoveLite = { id: string };
-type ComboLite = { id: string };
+type MoveLite = { id: string; name: string };
+type ComboLite = { id: string; name: string };
 
 type CharacterLite = {
   id: string;
@@ -58,7 +58,7 @@ export function ProfilePage() {
     async function loadGamesAndMoves() {
       const { data } = await supabase
         .from("games")
-        .select("id, name, characters(id, name, image, moves(id), combos(id))");
+        .select("id, name, characters(id, name, image, moves(id, name), combos(id, name))");
       setGames((data ?? []) as unknown as GameLite[]);
     }
     loadGamesAndMoves();
@@ -93,6 +93,66 @@ export function ProfilePage() {
       });
     }));
     return { totalItemsCount: tCount, masteredItemsCount: mCount };
+  }, [games, masteryMap, comboMasteryMap]);
+
+  const stats = useMemo(() => {
+    let highestStreak = 0;
+    let highestStreakOrigin = null as null | { characterName: string; moveName: string; image?: string | null };
+
+    let fastestTime = Infinity;
+    let fastestTimeOrigin = null as null | { characterName: string; moveName: string; image?: string | null };
+
+    let charactersMasteredCount = 0;
+
+    games.forEach((game) => {
+      game.characters.forEach((character) => {
+        let charMasteredCount = 0;
+        const charTotalCount = (character.moves?.length || 0) + (character.combos?.length || 0);
+
+        character.moves?.forEach((move) => {
+          const row = masteryMap.get(move.id);
+          if (row?.mastered) charMasteredCount++;
+          if (row) {
+            const maxVal = Math.max(row.best_streak_count || 0, row.current_streak_count || 0);
+            if (maxVal > highestStreak) {
+              highestStreak = maxVal;
+              highestStreakOrigin = { characterName: character.name, moveName: move.name, image: character.image };
+            }
+            if (row.best_avg_time_ms !== null && row.best_avg_time_ms < fastestTime && row.best_avg_time_ms > 0) {
+              fastestTime = row.best_avg_time_ms;
+              fastestTimeOrigin = { characterName: character.name, moveName: move.name, image: character.image };
+            }
+          }
+        });
+        character.combos?.forEach((combo) => {
+          const row = comboMasteryMap.get(combo.id);
+          if (row?.mastered) charMasteredCount++;
+          if (row) {
+            const maxVal = Math.max(row.best_streak_count || 0, row.current_streak_count || 0);
+            if (maxVal > highestStreak) {
+              highestStreak = maxVal;
+              highestStreakOrigin = { characterName: character.name, moveName: combo.name, image: character.image };
+            }
+            if (row.best_avg_time_ms !== null && row.best_avg_time_ms < fastestTime && row.best_avg_time_ms > 0) {
+              fastestTime = row.best_avg_time_ms;
+              fastestTimeOrigin = { characterName: character.name, moveName: combo.name, image: character.image };
+            }
+          }
+        });
+
+        if (charTotalCount > 0 && charMasteredCount === charTotalCount) {
+          charactersMasteredCount++;
+        }
+      });
+    });
+
+    return { 
+      highestStreak, 
+      highestStreakOrigin, 
+      fastestTime: fastestTime === Infinity ? null : fastestTime, 
+      fastestTimeOrigin,
+      charactersMasteredCount
+    };
   }, [games, masteryMap, comboMasteryMap]);
 
   const overallMasteryPct = totalItemsCount === 0 ? 0 : Math.round((masteredItemsCount / totalItemsCount) * 100);
@@ -185,6 +245,106 @@ export function ProfilePage() {
             <div className="bg-slate-800/40 border border-slate-700/50 rounded-lg p-4">
               <label className="block text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1 font-['Orbitron']">Email Address</label>
               <p className="text-slate-300 font-medium">{profile?.email ?? user.email}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* STATS SECTION */}
+      <div className="bg-[#0d1f35] border border-blue-500/30 rounded-xl overflow-hidden mb-8 shadow-lg">
+        <div className="p-4 border-b border-blue-500/20 flex items-center gap-2">
+          <Activity className="text-blue-400" size={20} />
+          <h3 className="text-white font-semibold font-['Orbitron']">Stats</h3>
+        </div>
+        <div className="p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            
+            {/* HIGHEST STREAK */}
+            <div className="relative z-0 bg-slate-800/40 border border-slate-700/50 rounded-lg p-5 flex flex-col justify-between transition-all hover:bg-slate-800/60 hover:border-orange-500/30 overflow-hidden">
+              {stats.highestStreakOrigin?.image && (
+                <div className="absolute right-0 top-0 bottom-0 pointer-events-none -z-10 flex justify-end">
+                  <img 
+                    src={stats.highestStreakOrigin.image} 
+                    className="h-full w-auto opacity-50"
+                    style={{
+                      maskImage: 'linear-gradient(to right, transparent 0%, black 50%)',
+                      WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 50%)'
+                    }}
+                    alt=""
+                  />
+                </div>
+              )}
+              <label className="block text-slate-500 text-xs font-semibold uppercase tracking-wider mb-3 font-['Orbitron'] flex items-center gap-1.5 focus-within:z-10">
+                <Flame size={14} className="text-orange-500" strokeWidth={2.5} />
+                Highest Streak
+              </label>
+              {stats.highestStreak > 0 ? (
+                <>
+                  <div className="text-4xl font-black font-['Orbitron'] text-orange-400 mb-2 drop-shadow-[0_0_8px_rgba(249,115,22,0.5)]">
+                    {stats.highestStreak}
+                  </div>
+                  <div className="text-slate-300 font-medium font-['Orbitron'] leading-tight relative z-10 w-fit drop-shadow-md">
+                    {stats.highestStreakOrigin?.characterName}
+                  </div>
+                  <div className="text-slate-500 text-sm font-mono truncate relative z-10 w-3/4 drop-shadow-md">
+                    {stats.highestStreakOrigin?.moveName}
+                  </div>
+                </>
+              ) : (
+                <p className="text-slate-500 text-sm font-['Orbitron'] mt-2">No streaks yet.</p>
+              )}
+            </div>
+
+            {/* FASTEST EXECUTION TIME */}
+            <div className="relative z-0 bg-slate-800/40 border border-slate-700/50 rounded-lg p-5 flex flex-col justify-between transition-all hover:bg-slate-800/60 hover:border-blue-500/30 overflow-hidden">
+              {stats.fastestTimeOrigin?.image && (
+                <div className="absolute right-0 top-0 bottom-0 pointer-events-none -z-10 flex justify-end">
+                  <img 
+                    src={stats.fastestTimeOrigin.image} 
+                    className="h-full w-auto opacity-50"
+                    style={{
+                      maskImage: 'linear-gradient(to right, transparent 0%, black 50%)',
+                      WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 50%)'
+                    }}
+                    alt=""
+                  />
+                </div>
+              )}
+              <label className="block text-slate-500 text-xs font-semibold uppercase tracking-wider mb-3 font-['Orbitron'] flex items-center gap-1.5">
+                <Zap size={14} className="text-blue-400" strokeWidth={2.5} />
+                Fastest Execution
+              </label>
+              {stats.fastestTime ? (
+                <>
+                  <div className="text-4xl font-black font-['Orbitron'] text-blue-300 mb-2 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]">
+                    {stats.fastestTime} <span className="text-lg text-blue-500 font-medium tracking-wide">ms</span>
+                  </div>
+                  <div className="text-slate-300 font-medium font-['Orbitron'] leading-tight relative z-10 w-fit drop-shadow-md">
+                    {stats.fastestTimeOrigin?.characterName}
+                  </div>
+                  <div className="text-slate-500 text-sm font-mono truncate relative z-10 w-3/4 drop-shadow-md">
+                    {stats.fastestTimeOrigin?.moveName}
+                  </div>
+                </>
+              ) : (
+                <p className="text-slate-500 text-sm font-['Orbitron'] mt-2">No data yet.</p>
+              )}
+            </div>
+             {/* CHARACTERS MASTERED */}
+            <div className="bg-slate-800/40 border border-slate-700/50 rounded-lg p-5 flex flex-col justify-between transition-all hover:bg-slate-800/60 hover:border-emerald-500/30">
+              <label className="block text-slate-500 text-xs font-semibold uppercase tracking-wider mb-3 font-['Orbitron'] flex items-center gap-1.5">
+                <Check size={14} className="text-emerald-400" strokeWidth={2.5} />
+                Characters Mastered
+              </label>
+              <div className="text-4xl font-black font-['Orbitron'] text-emerald-400 mb-2 drop-shadow-[0_0_8px_rgba(52,211,153,0.3)]">
+                {stats.charactersMasteredCount}
+              </div>
+              <div className="text-slate-300 font-medium font-['Orbitron'] leading-tight">
+                Fully Completed
+              </div>
+              <div className="text-slate-500 text-sm font-mono truncate">
+                out of all characters
+              </div>
             </div>
           </div>
         </div>
@@ -293,7 +453,7 @@ export function ProfilePage() {
                   {isOpen && (
                     <div className="p-5 flex flex-col gap-4">
                       <div className="flex items-center justify-between border-b border-slate-700/50 pb-3 mb-2">
-                        <span className="text-slate-400 text-xs uppercase tracking-widest font-['Orbitron'] font-semibold">
+                        <span className="text-slate-400 text-xs uppercase tracking-wider font-['Orbitron'] font-semibold">
                           Characters
                         </span>
                         <div className="flex items-center bg-[#0a1628] rounded-lg p-1 border border-slate-700 shadow-inner gap-1">
