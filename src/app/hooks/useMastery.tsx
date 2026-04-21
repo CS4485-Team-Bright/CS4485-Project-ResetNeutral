@@ -9,6 +9,7 @@ export type MoveMasteryRow = {
   best_avg_time_ms: number | null;
   current_streak_count: number;
   current_streak_total_ms: number;
+  best_streak_count: number;
 };
 
 export function useUserMoveMastery(moveIds: string[]) {
@@ -25,7 +26,7 @@ export function useUserMoveMastery(moveIds: string[]) {
       const { data, error } = await supabase
         .from("user_move_mastery")
         .select(
-          "move_id, mastered, best_avg_time_ms, current_streak_count, current_streak_total_ms"
+          "move_id, mastered, best_avg_time_ms, current_streak_count, current_streak_total_ms, best_streak_count"
         )
         .eq("user_id", user.id)
         .in("move_id", moveIds);
@@ -61,7 +62,7 @@ export function useUserComboMastery(comboIds: string[]) {
       const { data, error } = await supabase
         .from("user_combo_mastery")
         .select(
-          "combo_id, mastered, best_avg_time_ms, current_streak_count, current_streak_total_ms"
+          "combo_id, mastered, best_avg_time_ms, current_streak_count, current_streak_total_ms, best_streak_count"
         )
         .eq("user_id", user.id)
         .in("combo_id", comboIds);
@@ -111,7 +112,7 @@ export async function recordMoveAttempt({
   const { data: existingData } = await supabase
     .from(table)
     .select(
-      `${idField}, mastered, best_avg_time_ms, current_streak_count, current_streak_total_ms`
+      `${idField}, mastered, best_avg_time_ms, current_streak_count, current_streak_total_ms, best_streak_count`
     )
     .eq("user_id", userId)
     .eq(idField, idValue)
@@ -129,6 +130,7 @@ export async function recordMoveAttempt({
         mastered: false,
         current_streak_count: 0,
         current_streak_total_ms: 0,
+        best_streak_count: 0,
       });
       return;
     }
@@ -141,16 +143,22 @@ export async function recordMoveAttempt({
       mastered: false,
       current_streak_count: 1,
       current_streak_total_ms: Math.max(0, Math.round(durationMs)),
+      best_streak_count: 1,
+      best_avg_time_ms: Math.max(0, Math.round(durationMs)),
     });
     return;
   }
 
   if (!success) {
+    // Only process the Best Streak check when the active streak is broken
+    const newBestStreak = Math.max(existing.best_streak_count || 0, existing.current_streak_count || 0);
+
     await supabase
       .from(table)
       .update({
         current_streak_count: 0,
         current_streak_total_ms: 0,
+        best_streak_count: newBestStreak,
       })
       .eq("user_id", userId)
       .eq(idField, idValue);
@@ -158,32 +166,20 @@ export async function recordMoveAttempt({
   }
 
   const nextCount = existing.current_streak_count + 1;
-  const nextTotal = existing.current_streak_total_ms + Math.max(0, Math.round(durationMs));
-
-  if (nextCount >= 5) {
-    const avg = Math.round(nextTotal / 5);
-    const best =
-      existing.best_avg_time_ms === null ? avg : Math.min(existing.best_avg_time_ms, avg);
-
-    await supabase
-      .from(table)
-      .update({
-        mastered: true,
-        best_avg_time_ms: best,
-        current_streak_count: 0,
-        current_streak_total_ms: 0,
-      })
-      .eq("user_id", userId)
-      .eq(idField, idValue);
-
-    return;
+  const duration = Math.max(0, Math.round(durationMs));
+  
+  // Track absolute best runtime
+  let newBestTime = existing.best_avg_time_ms;
+  if (duration > 0) {
+    newBestTime = newBestTime === null ? duration : Math.min(newBestTime, duration);
   }
 
   await supabase
     .from(table)
     .update({
-      current_streak_count: nextCount,
-      current_streak_total_ms: nextTotal,
+      mastered: existing.mastered || nextCount >= 5, // become mastered if hit 5
+      current_streak_count: nextCount,               // keep counting forever!
+      best_avg_time_ms: newBestTime,
     })
     .eq("user_id", userId)
     .eq(idField, idValue);

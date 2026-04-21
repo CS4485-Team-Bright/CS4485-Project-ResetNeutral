@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import type { Character, Combo, Move } from "../types/game";
-import { Trash2, RotateCcw, Check, X, Clock, Zap, HelpCircle } from "lucide-react";
+import { Trash2, RotateCcw, Check, X, Clock, Zap, HelpCircle, Flame } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useUserMoveMastery, useUserComboMastery, recordMoveAttempt } from "../hooks/useMastery";
 
@@ -131,6 +131,54 @@ function getDifficultyBadgeStyles(difficulty: string): string {
   }
 }
 
+function AutoScrollText({ text, parentHovered }: { text: string; parentHovered: boolean }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLSpanElement>(null);
+  const [scrollAmount, setScrollAmount] = useState(0);
+  const [needsScroll, setNeedsScroll] = useState(false);
+
+  // Safely measure layout to dictate bounds
+  const checkOverflow = useCallback(() => {
+    if (containerRef.current && textRef.current) {
+      const containerWidth = containerRef.current.offsetWidth;
+      const textWidth = textRef.current.scrollWidth;
+      const overflow = textWidth > containerWidth;
+      setNeedsScroll(overflow);
+
+      if (parentHovered && overflow) {
+        // Add a little padding to the end scroll to let user read the last character cleanly
+        setScrollAmount(textWidth - containerWidth + 24);
+      } else {
+        setScrollAmount(0);
+      }
+    }
+  }, [parentHovered, text]);
+
+  useEffect(() => {
+    checkOverflow();
+    window.addEventListener("resize", checkOverflow);
+    return () => window.removeEventListener("resize", checkOverflow);
+  }, [checkOverflow]);
+
+  return (
+    <div
+      ref={containerRef}
+      className={`w-full overflow-hidden ${needsScroll ? "combo-notation-fade-out text-left" : "text-right"}`}
+    >
+      <span
+        ref={textRef}
+        className="inline-block whitespace-nowrap"
+        style={{
+          transform: `translateX(-${scrollAmount}px)`,
+          transition: scrollAmount > 0 ? `transform ${scrollAmount * 20}ms linear 0.5s` : "transform 0.2s ease-out",
+        }}
+      >
+        {text}
+      </span>
+    </div>
+  );
+}
+
 interface PracticeArenaProps {
   character: Character;
   gameId: string;
@@ -176,10 +224,21 @@ export function PracticeArena({
 
   const [practiceEntry, setPracticeEntry] = useState<PracticeEntry | null>(null);
   
+  // Local Stats & Caching
   const [localStreak, setLocalStreak] = useState<number>(0);
+  const [localBestStreak, setLocalBestStreak] = useState<number>(0);
   const [isMastered, setIsMastered] = useState<boolean>(false);
   const [localBestTime, setLocalBestTime] = useState<number | null>(null);
-  const [sessionMasteredIds, setSessionMasteredIds] = useState<Set<string>>(new Set());
+  
+  type SessionProgress = { streak: number; bestStreak: number; bestTime: number | null; mastered: boolean; };
+  const [sessionProgressMap, setSessionProgressMap] = useState<Record<string, SessionProgress>>({});
+  
+  const [pulseFlame, setPulseFlame] = useState(false);
+  const [showNewBest, setShowNewBest] = useState(false);
+  const [animatingMastery, setAnimatingMastery] = useState(false);
+  const streakRef = useRef(0);
+  const bestStreakRef = useRef(0);
+  const activeEntryIdRef = useRef<string | null>(null);
 
   type StepState = "pending" | "success" | "fail";
   const [practiceStepStatus, setPracticeStepStatus] = useState<StepState[]>([]);
@@ -246,54 +305,116 @@ export function PracticeArena({
     
     let masteredCount = 0;
     character.moves.forEach(m => {
-      if (sessionMasteredIds.has(m.id) || masteryMap.get(m.id)?.mastered) masteredCount++;
+      if (sessionProgressMap[m.id]?.mastered || masteryMap.get(m.id)?.mastered) masteredCount++;
     });
     character.combos.forEach(c => {
-      if (sessionMasteredIds.has(c.id) || comboMasteryMap.get(c.id)?.mastered) masteredCount++;
+      if (sessionProgressMap[c.id]?.mastered || comboMasteryMap.get(c.id)?.mastered) masteredCount++;
     });
     return Math.round((masteredCount / totalEntries) * 100);
-  }, [character.moves, character.combos, masteryMap, comboMasteryMap, sessionMasteredIds]);
+  }, [character.moves, character.combos, masteryMap, comboMasteryMap, sessionProgressMap]);
 
   useEffect(() => {
     if (practiceEntry && practiceEntry.id) {
       const activeMap = practiceEntry.kind === "move" ? masteryMap : comboMasteryMap;
       const dbMastery = activeMap.get(practiceEntry.id);
-      const locallyMastered = sessionMasteredIds.has(practiceEntry.id);
-      setLocalStreak(dbMastery?.current_streak_count || 0);
-      setIsMastered(locallyMastered || dbMastery?.mastered || false);
-      setLocalBestTime(dbMastery?.best_avg_time_ms || null);
+      const localSession = sessionProgressMap[practiceEntry.id];
+      
+      // Overwrite visual state seamlessly from local session if we have been training it, otherwise DB fallback
+      const applyStreak = localSession !== undefined ? localSession.streak : (dbMastery?.current_streak_count || 0);
+      const applyBestStreak = localSession !== undefined ? localSession.bestStreak : (dbMastery?.best_streak_count || 0);
+      const applyMastered = localSession !== undefined ? localSession.mastered : (dbMastery?.mastered || false);
+      const applyBestTime = localSession !== undefined ? localSession.bestTime : (dbMastery?.best_avg_time_ms || null);
+
+      if (activeEntryIdRef.current !== practiceEntry.id) {
+        setAnimatingMastery(false);
+        // Reset entirely for new move to prevent carrying over previous move's streak visually
+        setLocalStreak(applyStreak);
+        setLocalBestStreak(applyBestStreak);
+        bestStreakRef.current = applyBestStreak;
+        setIsMastered(applyMastered);
+        setLocalBestTime(applyBestTime);
+        activeEntryIdRef.current = practiceEntry.id;
+      } else {
+        setLocalStreak(applyStreak);
+        streakRef.current = applyStreak;
+        setLocalBestStreak(applyBestStreak);
+        bestStreakRef.current = applyBestStreak;
+        setIsMastered(applyMastered);
+        setLocalBestTime(applyBestTime);
+      }
     } else {
+      activeEntryIdRef.current = null;
+      setAnimatingMastery(false);
       setLocalStreak(0);
+      setLocalBestStreak(0);
+      streakRef.current = 0;
+      bestStreakRef.current = 0;
       setIsMastered(false);
       setLocalBestTime(null);
     }
-  }, [practiceEntry, masteryMap, comboMasteryMap, sessionMasteredIds]);
+  }, [practiceEntry, masteryMap, comboMasteryMap]); // Do NOT include sessionProgressMap (recordResult automatically tracks its own state synchronously)
 
   const recordResult = useCallback(async (success: boolean) => {
     if (!user || !practiceEntry || !practiceEntry.id) return;
+    const entryId = practiceEntry.id!;
     const durationMs = success && attemptStartMsRef.current !== null ? Date.now() - attemptStartMsRef.current : 0;
     
-    if (success) {
-      setLocalStreak((prev) => {
-        const next = prev + 1;
-        if (next >= 5) {
-          setIsMastered(true);
-          setSessionMasteredIds((s) => new Set(s).add(practiceEntry.id!));
-          return 0; 
-        }
-        return next;
-      });
-      if (durationMs > 0) {
-         setLocalBestTime(prev => prev === null ? durationMs : Math.min(prev, durationMs));
-      }
-    } else {
-      setLocalStreak(0);
+    // Evaluate Next Stats instantly using robust Ref handling
+    const nextStreak = success ? streakRef.current + 1 : 0;
+    streakRef.current = nextStreak;
+    
+    let nextBestStreak = bestStreakRef.current;
+    if (success && nextStreak > nextBestStreak && nextStreak > 1) {
+      nextBestStreak = nextStreak;
+      bestStreakRef.current = nextStreak;
+      setShowNewBest(true);
+      setTimeout(() => setShowNewBest(false), 1500);
     }
 
+    if (success) {
+      setPulseFlame(true);
+      setTimeout(() => setPulseFlame(false), 300); // Glow decay window
+    }
+
+    // Apply visual feedback flawlessly across states without waiting for React batch queues
+    setLocalStreak(nextStreak);
+    setLocalBestStreak(nextBestStreak);
+
+    setIsMastered(prevIsM => {
+      const justHit5 = nextStreak === 5 && !prevIsM;
+      const nextMastered = prevIsM || nextStreak >= 5;
+
+      if (justHit5) {
+        setAnimatingMastery(true);
+        setTimeout(() => {
+          setAnimatingMastery(false);
+        }, 1200);
+      }
+      
+      setLocalBestTime(prevTime => {
+        const nextBestTime = (success && durationMs > 0) ? (prevTime === null ? durationMs : Math.min(prevTime, durationMs)) : prevTime;
+        
+        // Final synchronous operation - Save everything to active session progress map
+        setSessionProgressMap(prevMap => ({
+          ...prevMap,
+          [entryId]: {
+            streak: nextStreak,
+            bestStreak: nextBestStreak,
+            mastered: nextMastered,
+            bestTime: nextBestTime
+          }
+        }));
+        
+        return nextBestTime;
+      });
+      return nextMastered;
+    });
+
+    // Make backend DB request silently
     await recordMoveAttempt({
       userId: user.id,
-      moveId: practiceEntry.kind === "move" ? practiceEntry.id : undefined,
-      comboId: practiceEntry.kind === "combo" ? practiceEntry.id : undefined,
+      moveId: practiceEntry.kind === "move" ? entryId : undefined,
+      comboId: practiceEntry.kind === "combo" ? entryId : undefined,
       gameId,
       characterId: character.id,
       success,
@@ -438,8 +559,6 @@ export function PracticeArena({
       });
     };
 
-    // Auto-consume 5 if the user is already at neutral and presses an attack button
-    // This solves combos starting with "5MP" where you don't actively move a direction key first
     if (expected === "5" && last.type === "button") {
       if (getActiveDirectionNumpad(activeKeys, facing) === "5") {
         markStep(idx, "success");
@@ -452,7 +571,7 @@ export function PracticeArena({
           return;
         }
         startInputTimer();
-        expected = practiceTokens[idx]; // Shift focus onto the button we just pressed for comparison below!
+        expected = practiceTokens[idx];
       } else {
         markStep(idx, "fail");
         playAudioFeedback("fail");
@@ -461,7 +580,6 @@ export function PracticeArena({
       }
     }
 
-    // Processing normally for directional or button matches
     if (gotDir === expected) {
       markStep(idx, "success");
       playAudioFeedback("success", idx);
@@ -472,13 +590,9 @@ export function PracticeArena({
         startInputTimer();
       }
     } else {
-      // Ignore overlapping/sloppy direction inputs. 
-      // Only fail immediately if they hit the wrong attack button.
       if (last.type === "direction") {
         return;
       }
-      
-      // Pressed the wrong attack button
       markStep(idx, "fail");
       playAudioFeedback("fail");
       void resetPracticeSoon(700, false);
@@ -519,7 +633,7 @@ export function PracticeArena({
         const nextDir = getActiveDirectionNumpad(nextKeys, facing);
         if (nextDir !== lastNumpadDirRef.current) {
           lastNumpadDirRef.current = nextDir;
-          addInput(nextDir, "direction"); // Now tracking "5" (Neutral)
+          addInput(nextDir, "direction"); 
           if (practiceEntry && practiceIndexRef.current === 0 && timerStartRef.current === null) {
             attemptStartMsRef.current = Date.now();
             startInputTimer();
@@ -542,7 +656,7 @@ export function PracticeArena({
         const nextDir = getActiveDirectionNumpad(nextKeys, facing);
         if (nextDir !== lastNumpadDirRef.current) {
           lastNumpadDirRef.current = nextDir;
-          addInput(nextDir, "direction"); // Now tracking "5" (Neutral)
+          addInput(nextDir, "direction");
         }
       }
     };
@@ -585,7 +699,6 @@ export function PracticeArena({
         ? "bg-yellow-400"
         : "bg-red-400";
 
-  // Calculate the physical grid focus irrespective of character facings
   const physicalNumpad = getActiveDirectionNumpad(activeKeys, "right");
 
   return (
@@ -599,6 +712,67 @@ export function PracticeArena({
         }
         .animate-slide-in-fade {
           animation: slideInFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        
+        @keyframes punchyRight {
+          0% { opacity: 0; transform: translateX(-20px); animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
+          20% { opacity: 1; transform: translateX(0); animation-timing-function: linear; }
+          80% { opacity: 1; transform: translateX(0); animation-timing-function: cubic-bezier(0.36, 0, 0.66, -0.56); }
+          100% { opacity: 0; transform: translateX(20px); }
+        }
+        .animate-punchy-right {
+          animation: punchyRight 1.5s forwards;
+        }
+
+        @keyframes masteryBoxPulse {
+          0% { border-color: rgba(59,130,246,0.3); transform: scale(1); }
+          15% { border-color: rgba(52,211,153,1); box-shadow: 0 0 30px rgba(52,211,153,0.5); transform: scale(1.03); }
+          30% { transform: scale(0.98); }
+          45% { transform: scale(1.01); }
+          100% { border-color: rgba(59,130,246,0.3); box-shadow: none; transform: scale(1); }
+        }
+        .anim-mastery-box {
+          animation: masteryBoxPulse 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards !important;
+        }
+
+        @keyframes barWipeOut {
+          0% { opacity: 1; transform: translateX(0); }
+          100% { opacity: 0; transform: translateX(-10px); }
+        }
+
+        @keyframes masteryBarsWidth {
+          0% { width: 125px; margin-right: 0.25rem; opacity: 1; }
+          40% { width: 125px; margin-right: 0.25rem; opacity: 1; }
+          70% { width: 0px; margin-right: 0px; opacity: 0; }
+          100% { width: 0px; margin-right: 0px; opacity: 0; }
+        }
+        .anim-bars-container {
+          width: 125px;
+          animation: masteryBarsWidth 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        @keyframes masteryLineIn {
+          0%, 60% { opacity: 0; }
+          80%, 100% { opacity: 1; }
+        }
+        .anim-mastery-line-in {
+          animation: masteryLineIn 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        @keyframes masteryTextSlideIn {
+          0%, 70% { opacity: 0; transform: translateX(-15px); }
+          100% { opacity: 1; transform: translateX(0); }
+        }
+        .anim-mastery-text-in {
+          animation: masteryTextSlideIn 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        
+        .combo-notation-fade-out {
+          mask-image: linear-gradient(to right, black calc(100% - 40px), transparent 100%);
+          -webkit-mask-image: linear-gradient(to right, black calc(100% - 40px), transparent 100%);
+          mask-size: 100% 100%;
+          mask-repeat: no-repeat;
+          mask-position: left;
         }
       `}</style>
       
@@ -779,7 +953,7 @@ export function PracticeArena({
           </p>
 
           {practiceEntry && practiceTokens.length > 0 && (
-            <div className="mb-4 rounded-lg border border-blue-500/30 bg-[#0a1628] p-4 shadow-inner">
+            <div className={`mb-4 rounded-lg border p-4 shadow-inner transition-all duration-300 ${animatingMastery ? 'anim-mastery-box z-10 relative bg-[#0a1628]' : 'border-blue-500/30 bg-[#0a1628]'}`}>
               <p className="text-slate-400 text-sm flex items-center gap-2 mb-1">
                 <span>Practicing: <span className="text-white font-semibold font-['Orbitron']">{practiceEntry.name}</span></span>
                 {practiceEntry.kind === "move" && (
@@ -802,35 +976,81 @@ export function PracticeArena({
               
               {user && (
                 <div className="flex flex-col gap-2 mt-2 mb-3 w-fit">
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-700/50 bg-slate-800/40">
-                    <span className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold flex items-center gap-1">
-                      <Check size={12} className="text-amber-400/70" />
+                  <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-slate-800/40 min-w-[220px] relative transition-all duration-300 ${pulseFlame && !animatingMastery ? "border-orange-500/80 shadow-[0_0_20px_rgba(249,115,22,0.6)] bg-orange-500/20 scale-105" : "border-slate-700/50"}`}>
+                    <span className="text-[10px] uppercase tracking-widest font-semibold flex items-center gap-1 bg-gradient-to-r from-orange-400 via-red-400 to-yellow-400 bg-clip-text text-transparent">
+                      <Flame size={14} strokeWidth={2.5} className={`transition-all duration-300 ${pulseFlame && !animatingMastery ? "text-yellow-400 scale-[1.7] rotate-12 drop-shadow-[0_0_12px_rgba(250,204,21,1)]" : "text-orange-500 scale-100"}`} />
                       Streak
                     </span>
-                    <div className="flex gap-1.5">
-                      {[1, 2, 3, 4, 5].map((step) => (
-                        <div
-                          key={step}
-                          className={`w-5 h-1.5 rounded-full transition-colors ${
-                            isMastered
-                              ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]"
-                              : step <= localStreak
-                                ? "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]"
+                    
+                    {!isMastered && !animatingMastery && (
+                      <div className="flex gap-1.5 ml-2">
+                        {[1, 2, 3, 4, 5].map((step) => (
+                          <div
+                            key={step}
+                            className={`w-5 h-1.5 rounded-full transition-colors ${
+                              step <= localStreak
+                                ? "bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]"
                                 : "bg-slate-700"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    {isMastered && <span className="text-[10px] text-emerald-400 ml-1 font-bold uppercase tracking-wider animate-slide-in-fade font-['Orbitron']">Mastered!</span>}
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    )}
+
+                    {animatingMastery && (
+                      <div className="flex items-center ml-2 h-full">
+                        <div className="flex gap-1.5 anim-bars-container shrink-0 overflow-hidden">
+                          {[1,2,3,4,5].map((step, idx) => (
+                             <div
+                               key={`anim-${step}`}
+                               className="w-5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)] shrink-0"
+                               style={{
+                                 animation: `barWipeOut 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards`,
+                                 animationDelay: `${idx * 0.08}s`
+                               }}
+                             />
+                          ))}
+                        </div>
+                        <div className="anim-mastery-line-in border-l border-slate-600 pl-3 flex items-center h-full">
+                           <span className="anim-mastery-text-in font-black font-['Orbitron'] text-orange-400 drop-shadow-[0_0_8px_rgba(249,115,22,0.5)] text-xl tracking-wider inline-block">
+                             {localStreak}
+                           </span>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {isMastered && !animatingMastery && (
+                      <div className="flex items-center ml-2 border-l border-slate-600 pl-3">
+                        <span className={`font-black font-['Orbitron'] tracking-wider shadow-sm transition-all duration-300 ${pulseFlame ? "text-yellow-300 drop-shadow-[0_0_15px_rgba(250,204,21,1)] scale-[1.3]" : "text-orange-400 drop-shadow-[0_0_8px_rgba(249,115,22,0.5)] scale-100"} ${localStreak > 999 ? 'text-sm' : localStreak > 99 ? 'text-base' : 'text-xl'}`}>
+                          {localStreak}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {showNewBest && (
+                      <span className="text-[10px] text-emerald-400 ml-3 font-bold uppercase tracking-wider font-['Orbitron'] animate-punchy-right absolute left-[210px] whitespace-nowrap drop-shadow-[0_0_5px_rgba(52,211,153,0.8)]">
+                        New Best!
+                      </span>
+                    )}
                   </div>
                   
-                  {localBestTime !== null && (
-                    <div className="flex items-center gap-1.5 px-3 py-1 rounded bg-slate-800/20 text-xs w-fit overflow-hidden">
-                      <Zap size={12} className="text-blue-400" />
-                      <span className="text-slate-400">Best runtime:</span>
-                      <span className="text-blue-300 font-mono font-medium animate-slide-in-fade">{localBestTime} ms</span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-3">
+                    {localBestStreak > 0 && (
+                      <div className="flex items-center gap-1.5 px-3 py-1 rounded bg-orange-500/10 border border-orange-500/20 text-xs w-fit overflow-hidden">
+                        <Flame size={12} className="text-orange-400" />
+                        <span className="text-slate-400">Best streak:</span>
+                        <span className="text-orange-300 font-mono font-medium">{localBestStreak}</span>
+                      </div>
+                    )}
+                    
+                    {localBestTime !== null && (
+                      <div className="flex items-center gap-1.5 px-3 py-1 rounded bg-blue-500/10 border border-blue-500/20 text-xs w-fit overflow-hidden">
+                        <Zap size={12} className="text-blue-400" />
+                        <span className="text-slate-400">Best runtime:</span>
+                        <span className="text-blue-300 font-mono font-medium animate-slide-in-fade">{localBestTime} ms</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -896,7 +1116,7 @@ export function PracticeArena({
                 practiceEntry?.notation === entry.notation;
                 
               const isMoveMastered = entry.id 
-                ? (sessionMasteredIds.has(entry.id) || masteryMap.get(entry.id)?.mastered)
+                ? (sessionProgressMap[entry.id]?.mastered || masteryMap.get(entry.id)?.mastered)
                 : false;
 
               return (
@@ -921,7 +1141,7 @@ export function PracticeArena({
                       : "bg-slate-800/50 hover:bg-slate-700/60 active:bg-slate-700/80"
                   }`}
                 >
-                  <div className="flex min-w-0 items-center gap-2">
+                  <div className="flex min-w-0 items-center gap-2 shrink-0">
                     <span className="text-white text-sm font-medium truncate font-['Orbitron']">{entry.name}</span>
                     {isMoveMastered && (
                       <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 ml-1 animate-slide-in-fade font-['Orbitron']">
@@ -950,13 +1170,15 @@ export function PracticeArena({
                     practiceEntry?.notation === entry.notation;
                     
                   const isComboMastered = entry.id 
-                    ? (sessionMasteredIds.has(entry.id) || comboMasteryMap.get(entry.id)?.mastered)
+                    ? (sessionProgressMap[entry.id]?.mastered || comboMasteryMap.get(entry.id)?.mastered)
                     : false;
 
                   return (
-                    <button
-                      type="button"
+                    <ComboButton
                       key={`${entry.kind}-${entry.name}-${entryIdx}`}
+                      entry={entry}
+                      selected={selected}
+                      isComboMastered={isComboMastered}
                       onClick={() => {
                         if (resetTimerRef.current !== null) {
                           window.clearTimeout(resetTimerRef.current);
@@ -969,30 +1191,7 @@ export function PracticeArena({
                         setInputHistory([]);
                         lastProcessedSeqRef.current = 0;
                       }}
-                      className={`flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${
-                        selected
-                          ? "bg-blue-600/30 ring-2 ring-blue-400/70 shadow-md"
-                          : "bg-slate-800/50 hover:bg-slate-700/60 active:bg-slate-700/80"
-                      }`}
-                    >
-                      <div className="flex min-w-0 items-center gap-2">
-                        <span className="text-white text-sm font-medium truncate font-['Orbitron']">{entry.name}</span>
-                        {isComboMastered && (
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 ml-1 animate-slide-in-fade font-['Orbitron']">
-                            Mastered!
-                          </span>
-                        )}
-                        <span className="text-[10px] px-1.5 py-0.5 rounded uppercase tracking-wide bg-purple-500/25 text-purple-200 border border-purple-400/40">
-                          combo
-                        </span>
-                        {entry.difficulty && (
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded uppercase tracking-wide border ${getDifficultyBadgeStyles(entry.difficulty)}`}>
-                            {entry.difficulty}
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-blue-300 text-sm font-mono shrink-0">{entry.notation}</span>
-                    </button>
+                    />
                   );
                 })}
               </div>
@@ -1001,5 +1200,53 @@ export function PracticeArena({
         </div>
       </div>
     </div>
+  );
+}
+
+function ComboButton({
+  entry,
+  selected,
+  isComboMastered,
+  onClick,
+}: {
+  entry: PracticeEntry;
+  selected: boolean;
+  isComboMastered: boolean;
+  onClick: () => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <button
+      type="button"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={onClick}
+      className={`group flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${
+        selected
+          ? "bg-blue-600/30 ring-2 ring-blue-400/70 shadow-md"
+          : "bg-slate-800/50 hover:bg-slate-700/60 active:bg-slate-700/80"
+      }`}
+    >
+      <div className="flex min-w-0 items-center gap-2 shrink-0">
+        <span className="text-white text-sm font-medium truncate font-['Orbitron']">{entry.name}</span>
+        {isComboMastered && (
+          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 ml-1 animate-slide-in-fade font-['Orbitron']">
+            Mastered!
+          </span>
+        )}
+        <span className="text-[10px] px-1.5 py-0.5 rounded uppercase tracking-wide bg-purple-500/25 text-purple-200 border border-purple-400/40">
+          combo
+        </span>
+        {entry.difficulty && (
+          <span className={`text-[10px] px-1.5 py-0.5 rounded uppercase tracking-wide border ${getDifficultyBadgeStyles(entry.difficulty)}`}>
+            {entry.difficulty}
+          </span>
+        )}
+      </div>
+      <div className="text-blue-300 text-sm font-mono overflow-hidden ml-4 pl-4 border-l border-slate-700 min-w-0 flex-grow">
+        <AutoScrollText text={entry.notation} parentHovered={hovered} />
+      </div>
+    </button>
   );
 }
