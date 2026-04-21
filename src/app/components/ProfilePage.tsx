@@ -405,7 +405,7 @@ export function ProfilePage() {
 
         <div className="p-6">
           <p className="text-slate-400 text-sm mb-5 font-['Orbitron']">
-            Select a game below to view your mastery percentage for each character. Master moves in the Practice Arena to fill your rings!
+            Select a game below to view your mastery percentage for each character. Master moves in the Practice Arena to achieve mastery!
           </p>
 
           <div className="space-y-3">
