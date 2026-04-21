@@ -48,9 +48,9 @@ export function Navbar() {
             <div className="hidden md:flex items-center gap-8">
               <Link
                 to="/"
-                className={`inline-block transition-all duration-300 ease-out hover:scale-110 ${
+                className={`inline-block transition-all duration-300 ease-out hover:scale-110 font-['Orbitron'] font-bold tracking-wider uppercase text-sm ${
                   location.pathname === "/"
-                    ? "text-white"
+                    ? "text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]"
                     : "text-slate-400 hover:text-white"
                 }`}
               >
@@ -58,9 +58,9 @@ export function Navbar() {
               </Link>
               <Link
                 to="/games"
-                className={`inline-block transition-all duration-300 ease-out hover:scale-110 ${
+                className={`inline-block transition-all duration-300 ease-out hover:scale-110 font-['Orbitron'] font-bold tracking-wider uppercase text-sm ${
                   location.pathname.startsWith("/game")
-                    ? "text-white"
+                    ? "text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]"
                     : "text-slate-400 hover:text-white"
                 }`}
               >
@@ -68,9 +68,9 @@ export function Navbar() {
               </Link>
               <Link
                 to="/profile"
-                className={`inline-block transition-all duration-300 ease-out hover:scale-110 ${
+                className={`inline-block transition-all duration-300 ease-out hover:scale-110 font-['Orbitron'] font-bold tracking-wider uppercase text-sm ${
                   location.pathname === "/profile"
-                    ? "text-white"
+                    ? "text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]"
                     : "text-slate-400 hover:text-white"
                 }`}
               >
@@ -90,7 +90,10 @@ export function Navbar() {
                   
                   {/* SETTINGS DROPDOWN (DESKTOP) */}
                   <div className={`absolute right-0 mt-3 w-56 bg-[#0d1f35] rounded-xl border border-slate-700/50 shadow-[0_10px_40px_rgba(0,0,0,0.5)] transform-origin-top transition-all duration-200 overflow-hidden z-50 ${settingsOpen ? "opacity-100 scale-100 visible" : "opacity-0 scale-95 invisible"}`}>
-                    <div className="p-3 bg-slate-800/30 border-b border-slate-700/50 text-slate-300 text-xs font-semibold uppercase tracking-wider font-['Orbitron']">
+                    <div 
+                      className="p-3 bg-slate-800/30 border-b border-slate-700/50 text-slate-300 text-xs font-semibold uppercase tracking-wider"
+                      style={{ fontFamily: "'Orbitron', sans-serif" }}
+                    >
                       Settings
                     </div>
                     <div className="p-2 flex flex-col gap-1">
@@ -116,9 +119,9 @@ export function Navbar() {
               ) : (
                 <Link
                   to="/auth"
-                  className={`transition-colors ${
+                  className={`inline-block transition-all duration-300 ease-out hover:scale-110 font-['Orbitron'] font-bold tracking-wider uppercase text-sm ${
                     location.pathname === "/auth"
-                      ? "text-white"
+                      ? "text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]"
                       : "text-slate-400 hover:text-white"
                   }`}
                 >
@@ -140,21 +143,21 @@ export function Navbar() {
             <div className="md:hidden pb-6 pt-2 flex flex-col gap-2">
               <Link
                 to="/"
-                className="text-slate-300 hover:text-white hover:bg-white/5 p-3 rounded-lg transition-colors border-b border-slate-800/50"
+                className="text-slate-300 hover:text-white hover:bg-white/5 p-3 rounded-lg transition-colors border-b border-slate-800/50 font-['Orbitron'] font-bold tracking-wider uppercase text-sm"
                 onClick={() => setMobileOpen(false)}
               >
                 Home
               </Link>
               <Link
                 to="/games"
-                className="text-slate-300 hover:text-white hover:bg-white/5 p-3 rounded-lg transition-colors border-b border-slate-800/50"
+                className="text-slate-300 hover:text-white hover:bg-white/5 p-3 rounded-lg transition-colors border-b border-slate-800/50 font-['Orbitron'] font-bold tracking-wider uppercase text-sm"
                 onClick={() => setMobileOpen(false)}
               >
                 Games
               </Link>
               <Link
                 to="/profile"
-                className="text-slate-300 hover:text-white hover:bg-white/5 p-3 rounded-lg transition-colors border-b border-slate-800/50"
+                className="text-slate-300 hover:text-white hover:bg-white/5 p-3 rounded-lg transition-colors border-b border-slate-800/50 font-['Orbitron'] font-bold tracking-wider uppercase text-sm"
                 onClick={() => setMobileOpen(false)}
               >
                 Profile
@@ -162,7 +165,10 @@ export function Navbar() {
 
               {user ? (
                 <div className="flex flex-col gap-2 pt-4 px-2 mt-2">
-                  <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider font-['Orbitron'] pl-1 mb-1">
+                  <span 
+                    className="text-slate-500 text-xs font-semibold uppercase tracking-wider pl-1 mb-1"
+                    style={{ fontFamily: "'Orbitron', sans-serif" }}
+                  >
                     Settings
                   </span>
                   <button 
@@ -186,7 +192,7 @@ export function Navbar() {
               ) : (
                 <Link
                   to="/auth"
-                  className="text-slate-300 hover:text-white p-3 rounded-lg transition-colors"
+                  className="text-slate-300 hover:text-white p-3 rounded-lg transition-colors font-['Orbitron'] font-bold tracking-wider uppercase text-sm"
                   onClick={() => setMobileOpen(false)}
                 >
                   Login

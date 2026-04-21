@@ -183,6 +183,7 @@ interface PracticeArenaProps {
   character: Character;
   gameId: string;
   facing?: "right" | "left";
+  onFacingChange?: (facing: "right" | "left") => void;
   inputWindowMs?: number;
   comboLinkWindowMs?: number;
 }
@@ -202,6 +203,7 @@ export function PracticeArena({
   character,
   gameId,
   facing = "right",
+  onFacingChange,
   inputWindowMs = DEFAULT_INPUT_WINDOW,
   comboLinkWindowMs = DEFAULT_COMBO_LINK_WINDOW,
 }: PracticeArenaProps) {
@@ -261,18 +263,19 @@ export function PracticeArena({
   const practiceMoves = useMemo<PracticeEntry[]>(() => {
     const getWeight = (type: string) => {
       const t = (type || "").toLowerCase();
-      if (t.includes("normal") && !t.includes("command")) return 1;
-      if (t.includes("command normal") || t.includes("unique")) return 2;
-      if (t.includes("special")) return 3;
-      if (t.includes("super 1") || t.includes("super art 1")) return 4;
-      if (t.includes("super 2") || t.includes("super art 2")) return 5;
-      if (t.includes("super 3") || t.includes("super art 3")) return 6;
-      if (t.includes("ultimate") || t.includes("critical")) return 7;
-      if (t.includes("super")) return 8; // generic super fallback
-      return 99; // unknown types fallback to the end
+      if (t.includes("special")) return 1;
+      if (t.includes("super") || t.includes("art") || t.includes("ultimate") || t.includes("critical")) return 2;
+      if (t.includes("command") || t.includes("unique")) return 3;
+      if (t.includes("normal")) return 4;
+      return 5;
     };
 
-    const sortedMoves = [...(character.moves || [])].sort((a, b) => getWeight(a.type) - getWeight(b.type));
+    const sortedMoves = [...(character.moves || [])].sort((a, b) => {
+      const weightA = getWeight(a.type);
+      const weightB = getWeight(b.type);
+      if (weightA !== weightB) return weightA - weightB;
+      return a.name.localeCompare(b.name);
+    });
 
     return sortedMoves.map((move) => ({
       kind: "move" as const,
@@ -282,17 +285,30 @@ export function PracticeArena({
     }));
   }, [character.moves]);
 
-  const practiceCombos = useMemo<PracticeEntry[]>(
-    () =>
-      character.combos.map((combo) => ({
-        kind: "combo" as const,
-        id: combo.id,
-        name: combo.name,
-        notation: combo.inputs,
-        difficulty: combo.difficulty,
-      })),
-    [character.combos]
-  );
+  const practiceCombos = useMemo<PracticeEntry[]>(() => {
+    const getDiffWeight = (diff: string) => {
+      const d = (diff || "").toLowerCase();
+      if (d === "beginner") return 1;
+      if (d === "intermediate") return 2;
+      if (d === "advanced") return 3;
+      return 4;
+    };
+
+    const sortedCombos = [...(character.combos || [])].sort((a, b) => {
+      const weightA = getDiffWeight(a.difficulty || "");
+      const weightB = getDiffWeight(b.difficulty || "");
+      if (weightA !== weightB) return weightA - weightB;
+      return a.name.localeCompare(b.name);
+    });
+
+    return sortedCombos.map((combo) => ({
+      kind: "combo" as const,
+      id: combo.id,
+      name: combo.name,
+      notation: combo.inputs,
+      difficulty: combo.difficulty,
+    }));
+  }, [character.combos]);
 
   const practiceTokens = useMemo(
     () => (practiceEntry ? parseMoveInputToTokens(practiceEntry.notation) : []),
@@ -776,11 +792,35 @@ export function PracticeArena({
         }
       `}</style>
       
-      <div className="p-4 border-b border-blue-500/20 flex items-center justify-between">
-        <h3 className="text-white font-['Orbitron']">
-          Practice Arena ({facing === "right" ? "Right Facing" : "Left Facing"})
-        </h3>
-        <div className="flex items-center gap-2">
+      <div className="p-4 border-b border-blue-500/20 flex flex-wrap gap-3 items-center justify-between">
+        <div className="flex items-center gap-3">
+          <h3 className="text-white font-['Orbitron']">Practice Arena</h3>
+          {onFacingChange && (
+            <div className="flex rounded-lg overflow-hidden border border-blue-500/20">
+              <button
+                onClick={() => onFacingChange("right")}
+                className={`px-2.5 py-1 text-xs transition-colors ${
+                  facing === "right"
+                    ? "bg-blue-600 text-white"
+                    : "bg-slate-800 text-slate-400 hover:text-white"
+                }`}
+              >
+                → Right
+              </button>
+              <button
+                onClick={() => onFacingChange("left")}
+                className={`px-2.5 py-1 text-xs transition-colors ${
+                  facing === "left"
+                    ? "bg-blue-600 text-white"
+                    : "bg-slate-800 text-slate-400 hover:text-white"
+                }`}
+              >
+                ← Left
+              </button>
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-2 ml-auto">
           <div className="group relative flex items-center gap-1.5 text-xs text-slate-500 cursor-help">
             <Clock size={12} />
             <span>{practiceEntry?.kind === "combo" ? comboLinkWindowMs : inputWindowMs}ms</span>
@@ -829,19 +869,37 @@ export function PracticeArena({
 
         {isActive && (
           <>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 bg-slate-800/30 p-3 rounded-xl border border-slate-700/50">
-              <div className="flex items-center gap-3">
+            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 mb-6 bg-slate-800/30 p-3 rounded-xl border border-slate-700/50 relative overflow-hidden">
+              <div className="flex items-center flex-wrap gap-3">
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 shadow-[0_0_10px_rgba(52,211,153,0.15)] flex-shrink-0">
                   <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_5px_rgba(52,211,153,0.8)]" />
                   <span className="text-emerald-400 text-xs font-bold uppercase tracking-wider font-['Orbitron']">Arena Active</span>
                 </div>
-                <span className="text-slate-400 text-xs hidden md:inline-block font-medium">
-                  Arrows/WASD = Directions <span className="mx-1 text-slate-600">|</span> J=P K=K L=S ;=H U=L I=M
-                </span>
+                <div className="hidden lg:flex flex-col items-start text-[11px] text-slate-500 font-medium tracking-wide gap-1.5 mt-0.5">
+                  <div className="flex items-center gap-1">
+                    <span className="px-1 py-0.5 rounded border border-slate-700 bg-slate-800/80 text-slate-300 font-mono font-normal">Arrows</span>
+                    <span>/</span>
+                    <span className="px-1 py-0.5 rounded border border-slate-700 bg-slate-800/80 text-slate-300 font-mono font-normal">WASD</span>
+                    <span className="ml-1 text-slate-600">=</span>
+                    <span className="text-emerald-400 font-bold uppercase tracking-wider font-['Orbitron']">Directions</span>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    {[
+                      { k: "J", v: "P" }, { k: "K", v: "K" }, { k: "L", v: "S" },
+                      { k: ";", v: "H" }, { k: "U", v: "L" }, { k: "I", v: "M" }
+                    ].map((bind) => (
+                      <span key={bind.k} className="flex items-center gap-1">
+                        <span className="px-1.5 py-0.5 rounded border border-slate-700 bg-slate-800/80 text-slate-300 font-mono font-normal">{bind.k}</span>
+                        <span className="text-slate-600">=</span>
+                        <span className="text-emerald-400 font-bold uppercase tracking-wider font-['Orbitron']">{bind.v}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </div>
               <button
                 onClick={() => setIsActive(false)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all shadow-[0_0_10px_rgba(239,68,68,0.15)] text-xs font-bold uppercase tracking-wider font-['Orbitron'] flex-shrink-0"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all shadow-[0_0_10px_rgba(239,68,68,0.15)] text-xs font-bold uppercase tracking-wider font-['Orbitron'] flex-shrink-0 self-start xl:self-auto"
               >
                 <RotateCcw size={14} strokeWidth={2.5} /> Deactivate
               </button>
@@ -1136,9 +1194,14 @@ export function PracticeArena({
                     stopInputTimer();
                     setIsResettingPractice(false);
                     setTooSlowMessage(false);
-                    setPracticeEntry(entry);
                     setInputHistory([]);
                     lastProcessedSeqRef.current = 0;
+                    
+                    if (selected) {
+                      setPracticeEntry(null);
+                    } else {
+                      setPracticeEntry(entry);
+                    }
                   }}
                   className={`flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${
                     selected
@@ -1192,9 +1255,14 @@ export function PracticeArena({
                         stopInputTimer();
                         setIsResettingPractice(false);
                         setTooSlowMessage(false);
-                        setPracticeEntry(entry);
                         setInputHistory([]);
                         lastProcessedSeqRef.current = 0;
+                        
+                        if (selected) {
+                          setPracticeEntry(null);
+                        } else {
+                          setPracticeEntry(entry);
+                        }
                       }}
                     />
                   );

@@ -29,19 +29,40 @@ export function CharacterPage() {
     
     const getWeight = (type: string) => {
       const t = (type || "").toLowerCase();
-      if (t.includes("normal") && !t.includes("command")) return 1;
-      if (t.includes("command normal") || t.includes("unique")) return 2;
-      if (t.includes("special")) return 3;
-      if (t.includes("super 1") || t.includes("super art 1")) return 4;
-      if (t.includes("super 2") || t.includes("super art 2")) return 5;
-      if (t.includes("super 3") || t.includes("super art 3")) return 6;
-      if (t.includes("ultimate") || t.includes("critical")) return 7;
-      if (t.includes("super")) return 8; // generic super fallback
-      return 99; // unknown types fallback to the end
+      if (t.includes("special")) return 1;
+      if (t.includes("super") || t.includes("art") || t.includes("ultimate") || t.includes("critical")) return 2;
+      if (t.includes("command") || t.includes("unique")) return 3;
+      if (t.includes("normal")) return 4;
+      return 5;
     };
 
-    return [...character.moves].sort((a, b) => getWeight(a.type) - getWeight(b.type));
+    return [...character.moves].sort((a, b) => {
+      const weightA = getWeight(a.type);
+      const weightB = getWeight(b.type);
+      if (weightA !== weightB) return weightA - weightB;
+      return a.name.localeCompare(b.name);
+    });
   }, [character?.moves]);
+
+  // Determine the display order for combos universally
+  const sortedCombos = useMemo(() => {
+    if (!character?.combos) return [];
+
+    const getDiffWeight = (diff: string) => {
+      const d = (diff || "").toLowerCase();
+      if (d === "beginner") return 1;
+      if (d === "intermediate") return 2;
+      if (d === "advanced") return 3;
+      return 4;
+    };
+
+    return [...character.combos].sort((a, b) => {
+      const weightA = getDiffWeight(a.difficulty || "");
+      const weightB = getDiffWeight(b.difficulty || "");
+      if (weightA !== weightB) return weightA - weightB;
+      return a.name.localeCompare(b.name);
+    });
+  }, [character?.combos]);
 
   if (loading) {
     return (
@@ -155,7 +176,7 @@ export function CharacterPage() {
             <div>
               <h2 className="text-white font-['Orbitron'] mb-4">Combos</h2>
               <div className="space-y-3">
-                {character.combos.map((combo) => (
+                {sortedCombos.map((combo) => (
                   <div key={combo.id} className="bg-[#111d33] border border-blue-500/15 rounded-xl p-4">
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="text-white font-['Orbitron']">{combo.name}</h4>
@@ -180,42 +201,14 @@ export function CharacterPage() {
 
           <div className="space-y-4">
             <div className="sticky top-4">
-              <div className="bg-[#0d1f35] border border-blue-500/30 rounded-t-xl p-4 border-b-0">
-                <div className="flex items-center gap-3">
-                  <h2 className="text-white font-['Orbitron']">Practice Arena</h2>
-                  <div className="flex rounded-lg overflow-hidden border border-blue-500/20">
-                    <button
-                      onClick={() => setFacing("right")}
-                      className={`px-3 py-1 text-sm transition-colors ${
-                        facing === "right"
-                          ? "bg-blue-600 text-white"
-                          : "bg-slate-800 text-slate-400 hover:text-white"
-                      }`}
-                    >
-                      → Right
-                    </button>
-                    <button
-                      onClick={() => setFacing("left")}
-                      className={`px-3 py-1 text-sm transition-colors ${
-                        facing === "left"
-                          ? "bg-blue-600 text-white"
-                          : "bg-slate-800 text-slate-400 hover:text-white"
-                      }`}
-                    >
-                      ← Left
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div className="rounded-t-none overflow-hidden">
-                <PracticeArena
-                  character={character}
-                  gameId={game.id}
-                  facing={facing}
-                  inputWindowMs={game.input_window_ms}
-                  comboLinkWindowMs={game.combo_link_window_ms}
-                />
-              </div>
+              <PracticeArena
+                character={character}
+                gameId={game.id}
+                facing={facing}
+                onFacingChange={setFacing}
+                inputWindowMs={game.input_window_ms}
+                comboLinkWindowMs={game.combo_link_window_ms}
+              />
               <Link
                 to={`/game/${game.id}`}
                 className="inline-flex items-center gap-2 text-slate-400 hover:text-white font-['Orbitron'] transition-colors mt-4"
