@@ -706,6 +706,29 @@ export function PracticeArena({
     }
   };
 
+  const activateArena = useCallback(() => {
+    setIsActive(true);
+  }, []);
+
+  const handlePracticeEntrySelect = useCallback((entry: PracticeEntry, selected: boolean) => {
+    if (resetTimerRef.current !== null) {
+      window.clearTimeout(resetTimerRef.current);
+      resetTimerRef.current = null;
+    }
+    stopInputTimer();
+    setIsResettingPractice(false);
+    setTooSlowMessage(false);
+    setInputHistory([]);
+    lastProcessedSeqRef.current = 0;
+
+    if (selected) {
+      setPracticeEntry(null);
+    } else {
+      setPracticeEntry(entry);
+      activateArena();
+    }
+  }, [activateArena, stopInputTimer]);
+
   const recentDisplay = inputHistory.slice(-15);
 
   const timerBarColor =
@@ -849,7 +872,7 @@ export function PracticeArena({
 
         {!isActive && (
           <button
-            onClick={() => setIsActive(true)}
+            onClick={activateArena}
             className="w-full py-8 rounded-xl border border-blue-500/40 bg-blue-500/5 hover:bg-blue-500/10 transition-all text-center mb-4 shadow-[0_0_20px_rgba(59,130,246,0.1)] hover:shadow-[0_0_25px_rgba(59,130,246,0.2)] group relative overflow-hidden"
           >
             <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-blue-400/80 to-transparent group-hover:via-blue-400 transition-all" />
@@ -1186,23 +1209,7 @@ export function PracticeArena({
                 <button
                   type="button"
                   key={`${entry.kind}-${entry.name}-${entryIdx}`}
-                  onClick={() => {
-                    if (resetTimerRef.current !== null) {
-                      window.clearTimeout(resetTimerRef.current);
-                      resetTimerRef.current = null;
-                    }
-                    stopInputTimer();
-                    setIsResettingPractice(false);
-                    setTooSlowMessage(false);
-                    setInputHistory([]);
-                    lastProcessedSeqRef.current = 0;
-                    
-                    if (selected) {
-                      setPracticeEntry(null);
-                    } else {
-                      setPracticeEntry(entry);
-                    }
-                  }}
+                  onClick={() => handlePracticeEntrySelect(entry, selected)}
                   className={`flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${
                     selected
                       ? "bg-blue-600/30 ring-2 ring-blue-400/70 shadow-md"
@@ -1247,23 +1254,7 @@ export function PracticeArena({
                       entry={entry}
                       selected={selected}
                       isComboMastered={isComboMastered}
-                      onClick={() => {
-                        if (resetTimerRef.current !== null) {
-                          window.clearTimeout(resetTimerRef.current);
-                          resetTimerRef.current = null;
-                        }
-                        stopInputTimer();
-                        setIsResettingPractice(false);
-                        setTooSlowMessage(false);
-                        setInputHistory([]);
-                        lastProcessedSeqRef.current = 0;
-                        
-                        if (selected) {
-                          setPracticeEntry(null);
-                        } else {
-                          setPracticeEntry(entry);
-                        }
-                      }}
+                      onClick={() => handlePracticeEntrySelect(entry, selected)}
                     />
                   );
                 })}
