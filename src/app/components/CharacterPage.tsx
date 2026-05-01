@@ -5,8 +5,8 @@ import { PracticeArena } from "./PracticeArena";
 import { useState, useMemo } from "react";
 import { useCharacter } from "../hooks/useGameData";
 
-function getDifficultyBadgeStyles(difficulty: string): string {
-  switch (difficulty.toLowerCase()) {
+function getDifficultyBadgeStyles(difficulty?: string | null): string {
+  switch (difficulty?.toLowerCase() ?? "") {
     case "beginner":
       return "bg-emerald-500/20 text-emerald-200 border-emerald-400/40";
     case "intermediate":
@@ -27,7 +27,7 @@ export function CharacterPage() {
   const sortedMoves = useMemo(() => {
     if (!character?.moves) return [];
     
-    const getWeight = (type: string) => {
+    const getWeight = (type?: string | null): number => {
       const t = (type || "").toLowerCase();
       if (t.includes("special")) return 1;
       if (t.includes("super") || t.includes("art") || t.includes("ultimate") || t.includes("critical")) return 2;
@@ -48,7 +48,7 @@ export function CharacterPage() {
   const sortedCombos = useMemo(() => {
     if (!character?.combos) return [];
 
-    const getDiffWeight = (diff: string) => {
+    const getDiffWeight = (diff?: string | null): number => {
       const d = (diff || "").toLowerCase();
       if (d === "beginner") return 1;
       if (d === "intermediate") return 2;
