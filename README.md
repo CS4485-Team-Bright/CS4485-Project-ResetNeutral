@@ -28,7 +28,7 @@ ResetNeutral is a free, web-based platform for anyone looking to get into fighti
 | Version | 1.0 |
 | Build Plan | 5 Phases over 11 weeks |
 | Auth | Admin-only (content management) |
-| Environments | Development · Staging (Vercel) · Production (AWS) |
+| Environments | Development · Staging (Vercel) · Production (CloudFlare) |
 
 **Target users:** new fighting game players, intermediate players expanding their game knowledge, and admin content curators.
 
@@ -50,7 +50,7 @@ ResetNeutral is a free, web-based platform for anyone looking to get into fighti
 | Backend | Python, Flask | REST API under `/api/v1` |
 | Database | Firebase / Firestore or Supabase | One instance per environment |
 | Auth | Admin-only token/session | Public browsing requires no auth |
-| Hosting | AWS | Backend API + static frontend |
+| Hosting | CloudFlare | Backend API + static frontend |
 | Testing | pytest / Python unittest | API route tests; JS smoke tests optional |
 
 ---
@@ -213,7 +213,7 @@ Standard codes: `400` validation, `401` unauthorized, `403` forbidden, `404` not
 | 2 — UI/UX & Data | Figma mockups, seed dataset, core read-only API | 2/20 – 2/27 |
 | 3 — MVP Dev | Navigable wiki, Training Ground with basic combo detection | 2/27 – 4/17 |
 | 4 — Testing & Beta | Integration tests, QA report, expanded content | 4/17 – 4/24 |
-| 5 — Deploy & Handover | Production AWS deploy, final demo, tagged GitHub release | 4/24 – 5/1 |
+| 5 — Deploy & Handover | Production CloudFlare deploy, final demo, tagged GitHub release | 4/24 – 5/1 |
 
 ---
 
