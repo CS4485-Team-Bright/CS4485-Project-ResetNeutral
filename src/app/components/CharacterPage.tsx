@@ -150,17 +150,9 @@ export function CharacterPage() {
                       </div>
                       <InputDisplay input={move.input} size="sm" />
                     </div>
-                    {move.gif ? (
+                    {move.gif && (
                       <div className="mt-3 mb-3 rounded-lg overflow-hidden border border-blue-500/20 bg-[#0a1628] flex justify-center bg-black/40">
                         <img src={move.gif} alt={`${move.name} demonstration`} className="max-w-full max-h-64 object-contain" />
-                      </div>
-                    ) : (
-                      <div className="mt-3 mb-3 rounded-lg overflow-hidden border border-blue-500/20 bg-[#0a1628] aspect-video flex items-center justify-center">
-                        <div className="text-center px-4">
-                          <div className="text-blue-500/30 text-4xl mb-2">🎬</div>
-                          <p className="text-slate-500 text-sm">Move demonstration GIF</p>
-                          <p className="text-slate-600 text-xs mt-1">Coming soon</p>
-                        </div>
                       </div>
                     )}
                     <p className="text-slate-400 text-sm mt-2">{move.description}</p>
