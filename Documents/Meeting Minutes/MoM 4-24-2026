@@ -1,0 +1,11 @@
+Discussed work done this week
+Gave a demonstration of the newly updated visuals on the website.
+Gave a demonstration of the combo -> database script
+showed database checks and caching along with security
+showed the testing, vitest, github actions to support CI/CD; practice arena support
+troubleshooted cloudflare environment, filled in SF6 data, filled in character descriptions onto the website that was missing
+
+Can use a video for the presentation but make sure to have audio issues figured out
+
+TODO:
+Add scalability document and share link
