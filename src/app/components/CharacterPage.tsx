@@ -148,7 +148,7 @@ export function CharacterPage() {
                           {move.type}
                         </span>
                       </div>
-                      <InputDisplay input={move.input} size="sm" />
+                      <InputDisplay input={move.input ?? ""} size="sm" />
                     </div>
                     {move.gif && (
                       <div className="mt-3 mb-3 rounded-lg overflow-hidden border border-blue-500/20 bg-[#0a1628] flex justify-center bg-black/40">
@@ -179,7 +179,7 @@ export function CharacterPage() {
                       </span>
                     </div>
                     <div className="bg-[#0a1628] rounded-lg px-3 py-2 mb-2 font-mono text-sm text-blue-300 overflow-x-auto">
-                      {combo.inputs}
+                      {combo.inputs ?? ""}
                     </div>
                     <div className="flex items-center justify-between text-xs text-slate-500">
                       <span>{combo.notes}</span>
