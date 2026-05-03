@@ -119,14 +119,13 @@ export function GamePage() {
             <Link
               key={character.id}
               to={`/game/${game.id}/character/${character.id}`}
-              className="group flex flex-col items-center w-[140px] md:w-[160px] transition-transform duration-300"
+              className="group flex flex-col items-center w-[140px] md:w-[160px] transition-transform duration-200"
             >
               <div 
                 className="relative w-full aspect-[3/4] mb-4 rounded-xl overflow-hidden bg-[#0d1f35] border-2 group-hover:border-blue-400 transition-all duration-300 group-hover:-translate-y-3 group-hover:scale-105 group-hover:shadow-[0_0_30px_rgba(59,130,246,0.3)] shadow-lg z-10"
                 style={{ borderColor: character.color ? `${character.color}80` : '#334155' }}
               >
-                {/* Background Fill Layer */}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#040c17] via-transparent to-transparent opacity-80 z-10 pointer-events-none" />
+
                 
                 {/* Optional Char Color Glow underneath */}
                 {character.color && (
@@ -140,7 +139,7 @@ export function GamePage() {
                   <img 
                     src={character.image} 
                     alt={character.name} 
-                    className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-110 relative z-0" 
+                    className="w-full h-full object-cover object-top transition-transform duration-200 group-hover:scale-107 relative z-0" 
                   />
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center relative z-0 opacity-50">
@@ -150,7 +149,7 @@ export function GamePage() {
                 )}
                 
                 {/* Bottom Gradient overlay to ensure text readability if overlaid */}
-                <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#040c17] via-[#040c17]/50 to-transparent z-10 opacity-60 group-hover:opacity-90 transition-opacity" />
+                <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#040c17] via-[#040c17]/25 to-transparent z-10 opacity-30 group-hover:opacity-45 transition-opacity" />
               </div>
               
               <div className="text-center w-full relative z-10">
