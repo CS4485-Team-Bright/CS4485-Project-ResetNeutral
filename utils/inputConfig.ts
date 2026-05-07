@@ -196,14 +196,18 @@ function preprocessNotation(raw: string): string {
   // 4. Movement prefixes — convert into explicit direction inputs so the
   //    Practice Arena requires the player to actually press up / down.
   //
-  //      lowercase  j.X  /  jX  /  jc.X  →  "8 X"   (up — jump / jump-cancel)
-  //      lowercase  d.X  /  dX           →  "2 X"   (down — crouch)
+  //      lowercase  j.X  /  jX  /  j+X  /  jc.X  /  jc+X  →  "8 X"   (up)
+  //      lowercase  d.X  /  dX  /  d+X                    →  "2 X"   (down)
+  //
+  //    The "+" form is what fighting-game wikis often use to mean "press the
+  //    direction together with the button" (e.g. "d+PP" = crouch + double-
+  //    punch macro). It works with or without whitespace around the +.
   //
   //    Case-sensitive on purpose: GGST's `D` (uppercase, Dust button) and any
   //    other capital-letter button must NOT get rewritten as a direction.
-  s = s.replace(/(^|\s)jc(?:\.|(?=[A-Z]))/g, "$1 8 ");
-  s = s.replace(/(^|\s)j(?:\.|(?=[A-Z]))/g,  "$1 8 ");
-  s = s.replace(/(^|\s)d(?:\.|(?=[A-Z]))/g,  "$1 2 ");
+  s = s.replace(/(^|\s)jc(?:\.|\s*\+|(?=[A-Z]))/g, "$1 8 ");
+  s = s.replace(/(^|\s)j(?:\.|\s*\+|(?=[A-Z]))/g,  "$1 8 ");
+  s = s.replace(/(^|\s)d(?:\.|\s*\+|(?=[A-Z]))/g,  "$1 2 ");
 
   // 5. Strip prefixes that are state markers, not directional intent:
   //      bt.  — back-turn (Leo Whitefang)

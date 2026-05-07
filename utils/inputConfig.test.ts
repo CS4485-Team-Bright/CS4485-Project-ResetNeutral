@@ -138,6 +138,24 @@ describe("Movement-prefix expansion (j → up, d → down)", () => {
     expect(shape("jc.214P", "guilty-gear-strive")).toEqual(["8", "2", "1", "4", "P"]);
   });
 
+  it("recognises the `+` form (d+X / j+X / jc+X) the same as the dot form", () => {
+    expect(shape("d+PP", "street-fighter-6")).toEqual(["2", "PP"]);
+    expect(shape("d+HK", "street-fighter-6")).toEqual(["2", "HK"]);
+    expect(shape("j+HP", "street-fighter-6")).toEqual(["8", "HP"]);
+    expect(shape("jc+H", "guilty-gear-strive")).toEqual(["8", "H"]);
+    // tolerates whitespace around the +
+    expect(shape("d + PP", "street-fighter-6")).toEqual(["2", "PP"]);
+    // works mid-string after a separator
+    expect(shape("5L > d+M", "2xko")).toEqual(["5", "L", "2", "M"]);
+  });
+
+  it("does NOT confuse the `+` in macro tokens like S1+S2", () => {
+    // S1+S2 is a defined 2XKO macro and must stay one chip even though it
+    // contains a +; the d/j prefix expansion is anchored on word boundary.
+    expect(shape("S1+S2", "2xko")).toEqual(["S1+S2"]);
+    expect(shape("S2+L/M/H", "2xko")).toEqual(["S2", "L"]);
+  });
+
   it("expands prefixes mid-string after >, , or ~ separators", () => {
     expect(shape("5L > j.2H", "2xko")).toEqual(["5", "L", "8", "2", "H"]);
     expect(shape("236K~jH", "guilty-gear-strive")).toEqual(["2", "3", "6", "K", "8", "H"]);
