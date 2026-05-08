@@ -197,7 +197,7 @@ function preprocessNotation(raw: string): string {
   //    Practice Arena requires the player to actually press up / down.
   //
   //      lowercase  j.X  /  jX  /  j+X  /  jc.X  /  jc+X  →  "8 X"   (up)
-  //      lowercase  d.X  /  dX  /  d+X                    →  "2 X"   (down)
+  //      lowercase  d.X  /  dX  /  d+X  /  cr.X            →  "2 X"   (down)
   //
   //    The "+" form is what fighting-game wikis often use to mean "press the
   //    direction together with the button" (e.g. "d+PP" = crouch + double-
@@ -207,6 +207,7 @@ function preprocessNotation(raw: string): string {
   //    other capital-letter button must NOT get rewritten as a direction.
   s = s.replace(/(^|\s)jc(?:\.|\s*\+|(?=[A-Z]))/g, "$1 8 ");
   s = s.replace(/(^|\s)j(?:\.|\s*\+|(?=[A-Z]))/g,  "$1 8 ");
+  s = s.replace(/(^|\s)cr\./gi,                     "$1 2 ");
   s = s.replace(/(^|\s)d(?:\.|\s*\+|(?=[A-Z]))/g,  "$1 2 ");
 
   // 5. Strip prefixes that are state markers, not directional intent:

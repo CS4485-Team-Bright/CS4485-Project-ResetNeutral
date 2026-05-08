@@ -148,6 +148,12 @@ describe("Movement-prefix expansion (j → up, d → down)", () => {
     expect(shape("4D", "guilty-gear-strive")).toEqual(["4", "D"]);
   });
 
+  it("treats cr. (crouching) as a down-direction press", () => {
+    expect(shape("cr.LP", "street-fighter-6")).toEqual(["2", "LP"]);
+    expect(shape("cr.MK", "street-fighter-6")).toEqual(["2", "MK"]);
+    expect(shape("5L > cr.M", "2xko")).toEqual(["5", "L", "2", "M"]);
+  });
+
   it("still strips bt. and w. as state-only prefixes", () => {
     expect(shape("bt.214K", "guilty-gear-strive")).toEqual(["2", "1", "4", "K"]);
     expect(shape("w.SS", "guilty-gear-strive")).toEqual(["S", "S"]);
