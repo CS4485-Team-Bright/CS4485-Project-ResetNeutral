@@ -3,14 +3,6 @@ import type { Character, Combo, Move } from "../types/game";
 import { Trash2, RotateCcw, Check, X, Clock, Zap, HelpCircle, Flame } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useUserMoveMastery, useUserComboMastery, recordMoveAttempt } from "../hooks/useMastery";
-import {
-  parseNotationToSteps,
-  getGameConfig,
-  buildKeyToButton,
-  activeButtonIds,
-  satisfiesMacro,
-  type ParsedStep,
-} from "../utils/inputConfig";
 
 // --- AUDIO ENGINE ---
 let audioCtx: AudioContext | null = null;
@@ -61,15 +53,22 @@ function playAudioFeedback(type: "success" | "fail", chainIndex: number = 0) {
 }
 // --------------------
 
-// Pretty-print a keyboard binding (lowercased internal key) for the legend.
-// Examples: "j" -> "J", " " -> "Space", ";" -> ";"
-function keyDisplayLabel(key: string): string {
-  if (key === " ") return "Space";
-  if (key.length === 1) return key.toUpperCase();
-  return key.charAt(0).toUpperCase() + key.slice(1);
+function parseMoveInputToTokens(raw: string): string[] {
+  let s = raw.split(/\s+or\s+/i)[0].trim();
+  s = s.replace(/\s*\([^)]*\)\s*/g, "").trim();
+  s = s.replace(/^j\./i, "");
+  s = s.replace(/\[(\d)\]/g, "$1");
+  s = s.replace(/\s/g, "");
+  const tokens: string[] = [];
+  for (const ch of s) {
+    if (/[1-9]/.test(ch)) tokens.push(ch);
+    else if (/[pkshlm]/i.test(ch)) tokens.push(ch.toUpperCase());
+  }
+  return tokens;
 }
 
-function tokenDisplayLabel(t: string, facing: "right" | "left" = "right"): string {  // \uFE0E forces text presentation instead of emoji rendering for OS that substitute arrows
+function tokenDisplayLabel(t: string, facing: "right" | "left" = "right"): string {
+  // \uFE0E forces text presentation instead of emoji rendering for OS that substitute arrows
   if (facing === "right") {
     const rightMap: Record<string, string> = {
       "1": "↙\uFE0E", "2": "↓\uFE0E", "3": "↘\uFE0E",
@@ -114,6 +113,10 @@ function getActiveDirectionNumpad(keys: Set<string>, facing: "right" | "left"): 
   if (right) return "6";
   return "5";
 }
+
+const KEY_TO_BUTTON: Record<string, string> = {
+  j: "P", k: "K", l: "S", ";": "H", u: "L", i: "M",
+};
 
 function getDifficultyBadgeStyles(difficulty: string): string {
   switch (difficulty.toLowerCase()) {
@@ -242,7 +245,7 @@ export function PracticeArena({
   type StepState = "pending" | "success" | "fail";
   const [practiceStepStatus, setPracticeStepStatus] = useState<StepState[]>([]);
   const practiceIndexRef = useRef(0);
-  const practiceStepsRef = useRef<ParsedStep[]>([]);
+  const practiceTokensRef = useRef<string[]>([]);
   const resetTimerRef = useRef<number | null>(null);
   const [isResettingPractice, setIsResettingPractice] = useState(false);
   const [tooSlowMessage, setTooSlowMessage] = useState(false);
@@ -307,15 +310,10 @@ export function PracticeArena({
     }));
   }, [character.combos]);
 
-  const practiceSteps = useMemo<ParsedStep[]>(
-    () => (practiceEntry ? parseNotationToSteps(practiceEntry.notation, gameId) : []),
-    [practiceEntry, gameId]
+  const practiceTokens = useMemo(
+    () => (practiceEntry ? parseMoveInputToTokens(practiceEntry.notation) : []),
+    [practiceEntry]
   );
-
-  // Per-game keyboard binding map (e.g. SF6: u→LP, i→MP, ... ; 2XKO: j→L, etc.).
-  const keyToButton = useMemo(() => buildKeyToButton(gameId), [gameId]);
-  const buttonKeySet = useMemo(() => new Set(Object.keys(keyToButton)), [keyToButton]);
-  const gameConfig = useMemo(() => getGameConfig(gameId), [gameId]);
 
   const characterMasteryPct = useMemo(() => {
     const totalEntries = character.moves.length + character.combos.length;
@@ -441,8 +439,8 @@ export function PracticeArena({
   }, [user, practiceEntry, gameId, character.id]);
 
   useEffect(() => {
-    practiceStepsRef.current = practiceSteps;
-  }, [practiceSteps]);
+    practiceTokensRef.current = practiceTokens;
+  }, [practiceTokens]);
 
   const getWindowMs = useCallback(() => {
     if (!practiceEntry) return inputWindowMs;
@@ -488,8 +486,8 @@ export function PracticeArena({
         practiceIndexRef.current = 0;
         lastProcessedSeqRef.current = 0;
         setInputHistory([]);
-        if (practiceStepsRef.current.length > 0) {
-          setPracticeStepStatus(practiceStepsRef.current.map(() => "pending"));
+        if (practiceTokensRef.current.length > 0) {
+          setPracticeStepStatus(practiceTokensRef.current.map(() => "pending"));
         }
         setIsResettingPractice(false);
         setTooSlowMessage(false);
@@ -520,12 +518,12 @@ export function PracticeArena({
     stopInputTimer();
     setTooSlowMessage(false);
     attemptStartMsRef.current = null;
-    if (practiceEntry && practiceSteps.length > 0) {
-      setPracticeStepStatus(practiceSteps.map(() => "pending"));
+    if (practiceEntry && practiceTokens.length > 0) {
+      setPracticeStepStatus(practiceTokens.map(() => "pending"));
     } else {
       setPracticeStepStatus([]);
     }
-  }, [practiceEntry, practiceSteps, stopInputTimer]);
+  }, [practiceEntry, practiceTokens, stopInputTimer]);
 
   const addInput = useCallback((symbol: string, type: "direction" | "button") => {
     const now = Date.now();
@@ -537,15 +535,17 @@ export function PracticeArena({
   }, []);
 
   useEffect(() => {
-    if (!practiceEntry || practiceSteps.length === 0 || inputHistory.length === 0) return;
+    if (!practiceEntry || practiceTokens.length === 0 || inputHistory.length === 0) return;
     if (isResettingPractice) return;
     const last = inputHistory[inputHistory.length - 1];
     if (last.seq === lastProcessedSeqRef.current) return;
     lastProcessedSeqRef.current = last.seq;
 
+    const gotDir = last.type === "direction" ? last.symbol : last.symbol.toUpperCase();
+
     let idx = practiceIndexRef.current;
-    if (idx >= practiceSteps.length) return;
-    let expected = practiceSteps[idx];
+    if (idx >= practiceTokens.length) return;
+    let expected = practiceTokens[idx];
 
     const resetPracticeSoon = async (ms: number, success: boolean) => {
       setIsResettingPractice(true);
@@ -557,8 +557,8 @@ export function PracticeArena({
         practiceIndexRef.current = 0;
         lastProcessedSeqRef.current = 0;
         setInputHistory([]);
-        if (practiceStepsRef.current.length > 0) {
-          setPracticeStepStatus(practiceStepsRef.current.map(() => "pending"));
+        if (practiceTokensRef.current.length > 0) {
+          setPracticeStepStatus(practiceTokensRef.current.map(() => "pending"));
         }
         setIsResettingPractice(false);
         setTooSlowMessage(false);
@@ -575,92 +575,45 @@ export function PracticeArena({
       });
     };
 
-    const advanceStep = () => {
-      markStep(idx, "success");
-      playAudioFeedback("success", idx);
-      practiceIndexRef.current = idx + 1;
-      if (practiceIndexRef.current >= practiceSteps.length) {
-        void resetPracticeSoon(1000, true);
-      } else {
-        startInputTimer();
-      }
-    };
-
-    const failStep = () => {
-      markStep(idx, "fail");
-      playAudioFeedback("fail");
-      void resetPracticeSoon(700, false);
-    };
-
-    // ── 1. "Neutral" auto-pass: when the next step is direction "5" and the
-    //       player hits a button while no direction key is held, accept the 5
-    //       and immediately re-evaluate the same input against the next step.
-    if (expected.kind === "dir" && expected.value === "5" && last.type === "button") {
+    if (expected === "5" && last.type === "button") {
       if (getActiveDirectionNumpad(activeKeys, facing) === "5") {
         markStep(idx, "success");
         playAudioFeedback("success", idx);
         idx += 1;
         practiceIndexRef.current = idx;
-        if (idx >= practiceSteps.length) {
+
+        if (idx >= practiceTokens.length) {
           void resetPracticeSoon(1000, true);
           return;
         }
         startInputTimer();
-        expected = practiceSteps[idx];
+        expected = practiceTokens[idx];
       } else {
-        failStep();
+        markStep(idx, "fail");
+        playAudioFeedback("fail");
+        void resetPracticeSoon(700, false);
         return;
       }
     }
 
-    // ── 2. Direction step ───────────────────────────────────────────────
-    if (expected.kind === "dir") {
+    if (gotDir === expected) {
+      markStep(idx, "success");
+      playAudioFeedback("success", idx);
+      practiceIndexRef.current = idx + 1;
+      if (practiceIndexRef.current >= practiceTokens.length) {
+        void resetPracticeSoon(1000, true);
+      } else {
+        startInputTimer();
+      }
+    } else {
       if (last.type === "direction") {
-        if (last.symbol === expected.value) advanceStep();
-        // Wrong direction press is treated as "still searching" — wait for
-        // the right one rather than punish brief overshoots.
         return;
       }
-      // A button press while a direction was expected is a real mistake.
-      failStep();
-      return;
+      markStep(idx, "fail");
+      playAudioFeedback("fail");
+      void resetPracticeSoon(700, false);
     }
-
-    // ── 3. Button step (single button or any-of for SF6 bare P/K) ───────
-    if (expected.kind === "btn") {
-      if (last.type === "direction") return; // ignore stray direction blips
-      if (expected.ids.includes(last.symbol)) advanceStep();
-      else failStep();
-      return;
-    }
-
-    // ── 4. Macro step (simultaneous multi-button press) ─────────────────
-    if (expected.kind === "macro") {
-      if (last.type === "direction") return;
-
-      const macro = expected.macro;
-      // Buttons currently held down (mapped via the per-game key binding).
-      const held = activeButtonIds(activeKeys, gameId);
-      // The just-pressed button should always be considered held even if
-      // React state hasn't flushed yet.
-      held.add(last.symbol);
-
-      if (satisfiesMacro(macro, held)) {
-        advanceStep();
-        return;
-      }
-
-      // Is the just-pressed button at least part of this macro? If so wait
-      // (the player is mid-press and might still complete the macro before
-      // the input window closes). Otherwise it's an unrelated button → fail.
-      const relevantPool =
-        macro.spec.kind === "all" ? macro.spec.required : macro.spec.pool;
-      if (relevantPool.includes(last.symbol)) return;
-
-      failStep();
-      return;
-    }
-  }, [inputHistory, practiceEntry, practiceSteps, activeKeys, isResettingPractice, startInputTimer, stopInputTimer, recordResult, facing, gameId]);
+  }, [inputHistory, practiceEntry, practiceTokens, activeKeys, isResettingPractice, startInputTimer, stopInputTimer, recordResult, facing]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -675,8 +628,7 @@ export function PracticeArena({
 
       const kLow = key.toLowerCase();
       const isDir = ["arrowup", "arrowdown", "arrowleft", "arrowright", "w", "a", "s", "d"].includes(kLow);
-      const buttonId = keyToButton[kLow];
-      const isBtn = !!buttonId;
+      const isBtn = !!KEY_TO_BUTTON[key];
 
       if (!isDir && !isBtn) return;
       e.preventDefault();
@@ -686,7 +638,7 @@ export function PracticeArena({
       setActiveKeys(nextKeys);
 
       if (isBtn) {
-        addInput(buttonId, "button");
+        addInput(KEY_TO_BUTTON[key], "button");
         if (practiceEntry && practiceIndexRef.current === 0 && timerStartRef.current === null) {
           attemptStartMsRef.current = Date.now();
           startInputTimer();
@@ -731,7 +683,7 @@ export function PracticeArena({
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [isActive, activeKeys, addInput, facing, isResettingPractice, practiceEntry, startInputTimer, keyToButton]);
+  }, [isActive, activeKeys, addInput, facing, isResettingPractice, practiceEntry, startInputTimer]);
 
   const clearHistory = () => {
     if (resetTimerRef.current !== null) {
@@ -747,9 +699,9 @@ export function PracticeArena({
     lastNumpadDirRef.current = "5";
     attemptStartMsRef.current = null;
     if (practiceEntry) {
-      const steps = parseNotationToSteps(practiceEntry.notation, gameId);
-      if (steps.length > 0) {
-        setPracticeStepStatus(steps.map(() => "pending"));
+      const t = parseMoveInputToTokens(practiceEntry.notation);
+      if (t.length > 0) {
+        setPracticeStepStatus(t.map(() => "pending"));
       }
     }
   };
@@ -933,15 +885,7 @@ export function PracticeArena({
             </p>
             <p className="text-slate-400 text-sm max-w-lg mx-auto leading-relaxed">
               Use <span className="text-slate-300 font-mono bg-slate-800/80 px-1 rounded border border-slate-700">arrow keys</span> or <span className="text-slate-300 font-mono bg-slate-800/80 px-1 rounded border border-slate-700">WASD</span> for directions<br/>
-              <span className="inline-flex flex-wrap items-center justify-center gap-x-2 gap-y-1 mt-1">
-                {gameConfig.buttons.map((b) => (
-                  <span key={b.id} className="inline-flex items-center gap-1">
-                    <span className="text-slate-300 font-mono bg-slate-800/80 px-1 rounded border border-slate-700">{keyDisplayLabel(b.key)}</span>
-                    <span className="text-slate-500">=</span>
-                    <span className="text-slate-300 font-semibold">{b.label}</span>
-                  </span>
-                ))}
-              </span>
+              <span className="text-slate-300 font-mono bg-slate-800/80 px-1 rounded border border-slate-700">J/K/L/;</span> for P/K/S/H, <span className="text-slate-300 font-mono bg-slate-800/80 px-1 rounded border border-slate-700">U/I</span> for L/M
             </p>
           </button>
         )}
@@ -962,12 +906,15 @@ export function PracticeArena({
                     <span className="ml-1 text-slate-600">=</span>
                     <span className="text-emerald-400 font-bold uppercase tracking-wider font-['Orbitron']">Directions</span>
                   </div>
-                  <div className="flex items-center gap-2.5 flex-wrap">
-                    {gameConfig.buttons.map((b) => (
-                      <span key={b.id} className="flex items-center gap-1" title={b.description}>
-                        <span className="px-1.5 py-0.5 rounded border border-slate-700 bg-slate-800/80 text-slate-300 font-mono font-normal">{keyDisplayLabel(b.key)}</span>
+                  <div className="flex items-center gap-2.5">
+                    {[
+                      { k: "J", v: "P" }, { k: "K", v: "K" }, { k: "L", v: "S" },
+                      { k: ";", v: "H" }, { k: "U", v: "L" }, { k: "I", v: "M" }
+                    ].map((bind) => (
+                      <span key={bind.k} className="flex items-center gap-1">
+                        <span className="px-1.5 py-0.5 rounded border border-slate-700 bg-slate-800/80 text-slate-300 font-mono font-normal">{bind.k}</span>
                         <span className="text-slate-600">=</span>
-                        <span className="text-emerald-400 font-bold uppercase tracking-wider font-['Orbitron']">{b.label}</span>
+                        <span className="text-emerald-400 font-bold uppercase tracking-wider font-['Orbitron']">{bind.v}</span>
                       </span>
                     ))}
                   </div>
@@ -1002,24 +949,31 @@ export function PracticeArena({
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-1.5 max-w-[420px]">
-                {gameConfig.buttons.map((b) => {
-                  const pressed = activeKeys.has(b.key) || activeKeys.has(b.key.toUpperCase());
-                  return (
+              <div className="grid grid-cols-3 gap-1">
+                {[
+                  { label: "L (U)", key: "u" },
+                  { label: "M (I)", key: "i" },
+                  { label: "", key: "" },
+                  { label: "P (J)", key: "j" },
+                  { label: "K (K)", key: "k" },
+                  { label: "S (L)", key: "l" },
+                  { label: "H (;)", key: ";" },
+                  { label: "", key: "" },
+                  { label: "", key: "" },
+                ].map((btn, i) =>
+                  btn.key ? (
                     <div
-                      key={b.id}
-                      title={`${b.description}${b.controller ? ` (controller: ${b.controller})` : ""}`}
-                      className={`min-w-[3.5rem] h-10 px-2 rounded-md flex flex-col items-center justify-center transition-colors leading-tight ${
-                        pressed ? "bg-red-500 text-white" : "bg-slate-700/50 text-slate-300"
+                      key={i}
+                      className={`w-14 h-10 rounded-md flex items-center justify-center text-xs transition-colors ${
+                        activeKeys.has(btn.key) ? "bg-red-500 text-white" : "bg-slate-700/50 text-slate-400"
                       }`}
                     >
-                      <span className="font-mono text-sm font-semibold">{b.label}</span>
-                      <span className={`text-[10px] ${pressed ? "text-red-100" : "text-slate-500"}`}>
-                        {keyDisplayLabel(b.key)}
-                      </span>
+                      {btn.label}
                     </div>
-                  );
-                })}
+                  ) : (
+                    <div key={i} />
+                  )
+                )}
               </div>
             </div>
 
@@ -1084,7 +1038,7 @@ export function PracticeArena({
             <span className="text-red-400 font-medium">red</span> on a mistake (then the sequence resets).
           </p>
 
-          {practiceEntry && practiceSteps.length > 0 && (
+          {practiceEntry && practiceTokens.length > 0 && (
             <div className={`mb-4 rounded-lg border p-4 shadow-inner transition-all duration-300 ${animatingMastery ? 'anim-mastery-box z-10 relative bg-[#0a1628]' : 'border-blue-500/30 bg-[#0a1628]'}`}>
               <p className="text-slate-400 text-sm flex items-center gap-2 mb-1">
                 <span>Practicing: <span className="text-white font-semibold font-['Orbitron']">{practiceEntry.name}</span></span>
@@ -1210,44 +1164,29 @@ export function PracticeArena({
               )}
 
               <div className="flex flex-wrap items-center gap-2">
-                {practiceSteps.map((step, i) => {
+                {practiceTokens.map((t, i) => {
                   const st = practiceStepStatus[i] ?? "pending";
                   const isNext =
                     st === "pending" &&
-                    practiceSteps.slice(0, i).every((_, j) => practiceStepStatus[j] === "success");
+                    practiceTokens.slice(0, i).every((_, j) => practiceStepStatus[j] === "success");
 
-                  const baseChip =
+                  const chip =
                     st === "success"
                       ? "border-2 border-emerald-400 bg-emerald-500/20 text-emerald-100 shadow-[0_0_12px_rgba(52,211,153,0.35)]"
                       : st === "fail"
                         ? "border-2 border-red-500 bg-red-500/25 text-red-100 shadow-[0_0_12px_rgba(239,68,68,0.35)]"
                         : isNext
                           ? "border-2 border-amber-400/80 bg-slate-800/80 text-slate-100 ring-2 ring-amber-500/40"
-                          : step.kind === "btn"
-                            ? "border border-blue-500/40 bg-blue-500/10 text-blue-200"
-                            : step.kind === "macro"
-                              ? "border border-purple-500/40 bg-purple-500/10 text-purple-200"
-                              : "border border-slate-600 bg-slate-800/60 text-slate-400";
-
-                  const label =
-                    step.kind === "dir"
-                      ? tokenDisplayLabel(step.value, facing)
-                      : step.kind === "btn"
-                        ? step.label
-                        : step.macro.label;
-
-                  const tooltip =
-                    step.kind === "macro" ? step.macro.description : undefined;
+                          : "border border-slate-600 bg-slate-800/60 text-slate-400";
 
                   return (
                     <div
-                      key={`${label}-${i}`}
-                      title={tooltip}
-                      className={`flex min-h-[2.5rem] min-w-[2.5rem] items-center justify-center gap-1 rounded-lg px-2.5 py-2 text-sm font-mono transition-all ${baseChip}`}
+                      key={`${t}-${i}`}
+                      className={`flex min-h-[2.5rem] min-w-[2.5rem] items-center justify-center gap-1 rounded-lg px-2.5 py-2 text-sm font-mono transition-all ${chip}`}
                     >
                       {st === "success" && <Check className="size-4 shrink-0 text-emerald-300" strokeWidth={2.5} />}
                       {st === "fail" && <X className="size-4 shrink-0 text-red-300" strokeWidth={2.5} />}
-                      <span>{label}</span>
+                      <span>{tokenDisplayLabel(t, facing)}</span>
                     </div>
                   );
                 })}
@@ -1314,7 +1253,7 @@ export function PracticeArena({
                       key={`${entry.kind}-${entry.name}-${entryIdx}`}
                       entry={entry}
                       selected={selected}
-                      isComboMastered={isComboMastered!}
+                      isComboMastered={isComboMastered}
                       onClick={() => handlePracticeEntrySelect(entry, selected)}
                     />
                   );
