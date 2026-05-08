@@ -148,7 +148,7 @@ export function CharacterPage() {
                           {move.type}
                         </span>
                       </div>
-                      <InputDisplay input={move.input ?? ""} gameId={game.id} size="sm" />
+                      <InputDisplay input={move.input ?? ""} size="sm" />
                     </div>
                     {move.gif && (
                       <div className="mt-3 mb-3 rounded-lg overflow-hidden border border-blue-500/20 bg-[#0a1628] flex justify-center bg-black/40">
