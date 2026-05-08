@@ -56,8 +56,8 @@ export function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center max-w-4xl mx-auto">
             <h1
-              className="text-5xl md:text-7xl mb-6 text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-100 to-slate-400 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]"
-              style={{ fontFamily: "'UnifrakturMaguntia', cursive" }}
+              className="text-5xl md:text-7xl mb-6 text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-100 to-slate-400 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)] italic font-semibold uppercase"
+              style={{ fontFamily: "'Titillium Web', sans-serif" }}
             >
               Reset Neutral
             </h1>
@@ -320,8 +320,8 @@ export function HomePage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex flex-col items-center md:items-start gap-1">
               <span
-                className="text-2xl text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400"
-                style={{ fontFamily: "'UnifrakturMaguntia', cursive" }}
+                className="text-2xl text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 italic font-bold uppercase"
+                style={{ fontFamily: "'Titillium Web', sans-serif", fontWeight: 700 }}
               >
                 Reset Neutral
               </span>

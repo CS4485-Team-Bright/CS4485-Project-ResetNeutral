@@ -57,7 +57,7 @@ export function useGames() {
         const charsRes = await withRetry(
           () =>
             withTimeout(
-              supabase.from("characters").select("*").in("game_id", gameIds),
+              supabase.from("characters").select("*").in("game_id", gameIds).order("order_index", { ascending: true }),
               45000
             ),
           1
@@ -124,7 +124,7 @@ export function useGame(gameId: string) {
             withTimeout(
               Promise.all([
                 supabase.from("games").select("*").eq("id", gameId).single(),
-                supabase.from("characters").select("*").eq("game_id", gameId),
+                supabase.from("characters").select("*").eq("game_id", gameId).order("order_index", { ascending: true }),
               ]),
               45000
             ),
