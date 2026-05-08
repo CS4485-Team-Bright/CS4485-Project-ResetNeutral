@@ -38,8 +38,8 @@ export function Navbar() {
           <div className="flex items-center justify-between h-16">
             <Link to="/" className="flex items-center gap-2 group">
               <span
-                className="text-2xl text-white transition-all duration-300 ease-out inline-block group-hover:scale-110 group-hover:text-cyan-100 group-hover:drop-shadow-[0_0_15px_rgba(6,182,212,0.9)]"
-                style={{ fontFamily: "'UnifrakturMaguntia', cursive" }}
+                className="text-2xl text-white transition-all duration-300 ease-out inline-block group-hover:scale-110 group-hover:text-cyan-100 group-hover:drop-shadow-[0_0_15px_rgba(6,182,212,0.9)] italic font-semibold uppercase"
+                style={{ fontFamily: "'Titillium Web', sans-serif" }}
               >
                 Reset Neutral
               </span>
