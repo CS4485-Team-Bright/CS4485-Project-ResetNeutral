@@ -76,8 +76,16 @@ export function ProfilePage() {
     return ids;
   }, [games]);
 
-  const { map: masteryMap } = useUserMoveMastery(allMoveIds);
-  const { map: comboMasteryMap } = useUserComboMastery(allComboIds);
+  const { map: masteryMap, refetch: refetchMoves } = useUserMoveMastery(allMoveIds);
+  const { map: comboMasteryMap, refetch: refetchCombos } = useUserComboMastery(allComboIds);
+
+  // Always pull fresh mastery data when the profile page is visited,
+  // since the hooks only auto-fetch when IDs change and the component
+  // may stay mounted across navigations.
+  useEffect(() => {
+    refetchMoves();
+    refetchCombos();
+  }, [refetchMoves, refetchCombos]);
 
   const { totalItemsCount, masteredItemsCount } = useMemo(() => {
     let tCount = 0;
