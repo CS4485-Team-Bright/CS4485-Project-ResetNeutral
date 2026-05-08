@@ -122,8 +122,7 @@ describe("parseNotationToSteps — fallback for unknown games", () => {
   });
 });
 
-describe("Movement-prefix expansion (j → up, d → down)", () => {
-  it("emits up (8) for both `j.X` and inline `jX` forms", () => {
+describe("Movement-prefix expansion (j → up, d → down)", () => {  it("emits up (8) for both `j.X` and inline `jX` forms", () => {
     expect(shape("j.236K", "guilty-gear-strive")).toEqual(["8", "2", "3", "6", "K"]);
     expect(shape("jS2", "2xko")).toEqual(["8", "S2"]);
     expect(shape("j.2H", "2xko")).toEqual(["8", "2", "H"]);
@@ -146,6 +145,12 @@ describe("Movement-prefix expansion (j → up, d → down)", () => {
   it("does NOT touch uppercase D — that's GGST's Dust button", () => {
     expect(shape("236D", "guilty-gear-strive")).toEqual(["2", "3", "6", "D"]);
     expect(shape("4D", "guilty-gear-strive")).toEqual(["4", "D"]);
+  });
+
+  it("treats st. (standing) as neutral direction (5)", () => {
+    expect(shape("st.HP", "street-fighter-6")).toEqual(["5", "HP"]);
+    expect(shape("st.H", "guilty-gear-strive")).toEqual(["5", "H"]);
+    expect(shape("5L > st.M", "2xko")).toEqual(["5", "L", "5", "M"]);
   });
 
   it("treats cr. (crouching) as a down-direction press", () => {
@@ -192,5 +197,110 @@ describe("satisfiesMacro", () => {
     expect(satisfiesMacro(lm, new Set(["L", "M"]))).toBe(true);
     expect(satisfiesMacro(lm, new Set(["L", "M", "H"]))).toBe(true);
     expect(satisfiesMacro(lm, new Set(["M", "H"]))).toBe(false);
+  });
+});
+
+describe("Combo notation — single-direction prefixes (b/f/u)", () => {
+  const game = "street-fighter-6";
+
+  it("expands b+X into back (4) + button", () => {
+    expect(shape("b+hp", game)).toEqual(["4", "HP"]);
+    expect(shape("b+HK", game)).toEqual(["4", "HK"]);
+  });
+
+  it("expands f+X into forward (6) + button", () => {
+    expect(shape("f+hk", game)).toEqual(["6", "HK"]);
+    expect(shape("f+p", game)).toEqual(["6", "P"]);
+  });
+
+  it("expands u+X into up (8) + button", () => {
+    expect(shape("u+hk", game)).toEqual(["8", "HK"]);
+    expect(shape("u+kk", game)).toEqual(["8", "KK"]);
+  });
+
+  it("does not chew the trailing direction off multi-letter motions", () => {
+    // qcb+X must not be interpreted as `qc` + `b+X`; bar/letter alignment matters.
+    expect(shape("qcb+lp", game)).toEqual(["2", "1", "4", "LP"]);
+    expect(shape("qcf+mp", game)).toEqual(["2", "3", "6", "MP"]);
+  });
+});
+
+describe("Combo notation — named motion shortcuts", () => {
+  const game = "street-fighter-6";
+
+  it("qcf+X → 236 + button (quarter-circle forward)", () => {
+    expect(shape("qcf+hp", game)).toEqual(["2", "3", "6", "HP"]);
+    expect(shape("qcf+pp", game)).toEqual(["2", "3", "6", "PP"]);
+  });
+
+  it("qcb+X → 214 + button (quarter-circle back)", () => {
+    expect(shape("qcb+lk", game)).toEqual(["2", "1", "4", "LK"]);
+    expect(shape("qcb+kk", game)).toEqual(["2", "1", "4", "KK"]);
+  });
+
+  it("srk+X / dp+X → 623 + button (Z-motion / dragon punch)", () => {
+    expect(shape("srk+hp", game)).toEqual(["6", "2", "3", "HP"]);
+    expect(shape("dp+lp", game)).toEqual(["6", "2", "3", "LP"]);
+  });
+
+  it("hcb+X → 63214 + button (half-circle back)", () => {
+    expect(shape("hcb+hk", game)).toEqual(["6", "3", "2", "1", "4", "HK"]);
+  });
+
+  it("hcf+X → 41236 + button (half-circle forward)", () => {
+    expect(shape("hcf+hp", game)).toEqual(["4", "1", "2", "3", "6", "HP"]);
+  });
+
+  it("dd+X → 22 + button (double-down super)", () => {
+    expect(shape("dd+hp", game)).toEqual(["2", "2", "HP"]);
+    expect(shape("dd+kk", game)).toEqual(["2", "2", "KK"]);
+  });
+
+  it("works case-insensitively for motion shortcuts", () => {
+    expect(shape("QCF+HP", game)).toEqual(["2", "3", "6", "HP"]);
+    expect(shape("Qcb+LK", game)).toEqual(["2", "1", "4", "LK"]);
+  });
+});
+
+describe("Combo notation — SF6 system mechanics (DI / DR / xx)", () => {
+  const game = "street-fighter-6";
+
+  it("DI expands to the HP+HK Drive Impact macro", () => {
+    expect(shape("DI", game)).toEqual(["HP+HK"]);
+    expect(shape("DI, b+hp", game)).toEqual(["HP+HK", "4", "HP"]);
+  });
+
+  it("DR (any case) expands to the MP+MK Drive Rush macro", () => {
+    expect(shape("DR", game)).toEqual(["MP+MK"]);
+    expect(shape("dr xx cr. lk", game)).toEqual(["MP+MK", "2", "LK"]);
+  });
+
+  it("xx is treated as a step boundary (same as `>`)", () => {
+    expect(shape("st. mp xx mp", game)).toEqual(["5", "MP", "MP"]);
+    expect(shape("cr. hp xx qcb+lp", game)).toEqual(["2", "HP", "2", "1", "4", "LP"]);
+  });
+
+  it("parses a full real combo end-to-end", () => {
+    // From the combos CSV: Ken — Drive Rush Examples
+    expect(
+      shape("cr. lp, st. mp xx DR xx st. mp, cr. hp xx qcb+lk, srk+mp", game)
+    ).toEqual([
+      "2", "LP",
+      "5", "MP",
+      "MP+MK",
+      "5", "MP",
+      "2", "HP",
+      "2", "1", "4", "LK",
+      "6", "2", "3", "MP",
+    ]);
+  });
+
+  it("parses a DI-followup combo end-to-end", () => {
+    // From the combos CSV: DI Followups (Wallsplat) — f+hk xx dd+hp
+    expect(shape("DI, f+hk xx dd+hp", game)).toEqual([
+      "HP+HK",
+      "6", "HK",
+      "2", "2", "HP",
+    ]);
   });
 });

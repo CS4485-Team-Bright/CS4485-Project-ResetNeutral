@@ -194,9 +194,13 @@ function preprocessNotation(raw: string): string {
   s = s.split(/\s+(?:after|during|in|on|while)\s+/i)[0];
 
   // 4. Movement prefixes — convert into explicit direction inputs so the
-  //    Practice Arena requires the player to actually press up / down.
+  //    Practice Arena requires the player to actually press the direction.
   //
   //      lowercase  j.X  /  jX  /  j+X  /  jc.X  /  jc+X  →  "8 X"   (up)
+  //      lowercase  u.X  /  u+X                            →  "8 X"   (up)
+  //      lowercase  f.X  /  f+X                            →  "6 X"   (forward)
+  //      st.X                                               →  "5 X"   (neutral / standing)
+  //      lowercase  b.X  /  b+X                            →  "4 X"   (back)
   //      lowercase  d.X  /  dX  /  d+X  /  cr.X            →  "2 X"   (down)
   //
   //    The "+" form is what fighting-game wikis often use to mean "press the
@@ -207,8 +211,38 @@ function preprocessNotation(raw: string): string {
   //    other capital-letter button must NOT get rewritten as a direction.
   s = s.replace(/(^|\s)jc(?:\.|\s*\+|(?=[A-Z]))/g, "$1 8 ");
   s = s.replace(/(^|\s)j(?:\.|\s*\+|(?=[A-Z]))/g,  "$1 8 ");
+  s = s.replace(/(^|\s)u(?:\.|\s*\+|(?=[A-Z]))/g,  "$1 8 ");
+  s = s.replace(/(^|\s)f(?:\.|\s*\+|(?=[A-Z]))/g,  "$1 6 ");
+  s = s.replace(/(^|\s)st\./gi,                     "$1 5 ");
+  s = s.replace(/(^|\s)b(?:\.|\s*\+|(?=[A-Z]))/g,  "$1 4 ");
   s = s.replace(/(^|\s)cr\./gi,                     "$1 2 ");
   s = s.replace(/(^|\s)d(?:\.|\s*\+|(?=[A-Z]))/g,  "$1 2 ");
+
+  // 5. Named motion shortcuts — universal fighting-game wiki conventions that
+  //    expand to the underlying numpad sequence so the player has to actually
+  //    perform the motion. Applied AFTER directional prefixes so that single-
+  //    letter rules (b+, f+, u+) don't accidentally chew off the trailing
+  //    direction letter of a multi-letter motion (qcb+, qcf+, hcb+, hcf+).
+  //    Case-insensitive: data uses both `dr`/`DR` and `qcb`/`QCB`.
+  const motionShortcuts: Array<[RegExp, string]> = [
+    [/(^|\s)qcf\s*\+/gi,  "$1 236 "],
+    [/(^|\s)qcb\s*\+/gi,  "$1 214 "],
+    [/(^|\s)hcf\s*\+/gi,  "$1 41236 "],
+    [/(^|\s)hcb\s*\+/gi,  "$1 63214 "],
+    [/(^|\s)srk\s*\+/gi,  "$1 623 "],     // shoryuken / Z-motion
+    [/(^|\s)dp\s*\+/gi,   "$1 623 "],     // "dragon punch" alias for srk
+    [/(^|\s)dd\s*\+/gi,   "$1 22 "],      // double-down
+    // SF6 system mechanics. These macro ids only exist in the SF6 game config;
+    // for other games the resulting characters will fall through harmlessly.
+    [/(^|\s)DI\b/g,       "$1 HPHK "],    // Drive Impact   — HP+HK macro
+    [/(^|\s)DR\b/gi,      "$1 MPMK "],    // Drive Rush     — MP+MK macro
+  ];
+  for (const [rx, rep] of motionShortcuts) s = s.replace(rx, rep);
+
+  // 6. "xx" cancel separator — fighting-game shorthand for "cancel into",
+  //    same role as ">". Replaced with whitespace so the rest of the
+  //    pipeline treats it as a clean step boundary.
+  s = s.replace(/(^|\s)xx(?=\s|$)/gi, "$1 ");
 
   // 5. Strip prefixes that are state markers, not directional intent:
   //      bt.  — back-turn (Leo Whitefang)
