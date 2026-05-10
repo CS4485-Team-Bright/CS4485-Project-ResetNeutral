@@ -1,0 +1,8 @@
+Repo: https://github.com/CS4485-Team-Bright/CS4485-Project-ResetNeutral
+Project Management Tool: https://github.com/orgs/CS4485-Team-Bright/projects/1
+Final Project Report: [Will need to upload to the github and include a link to it here]
+Weekly MOMs: https://github.com/CS4485-Team-Bright/CS4485-Project-ResetNeutral/tree/main/Documents/Meeting%20Minutes
+Weekly Reports: https://github.com/CS4485-Team-Bright/CS4485-Project-ResetNeutral/tree/main/Documents/Weekly%20Reports
+Project Spec: https://github.com/CS4485-Team-Bright/CS4485-Project-ResetNeutral/blob/main/Documents/ResetNeutral%20Spec.docx
+Architecture Diagrams: [Will need to upload to the github repo and include a link to it here]
+Main URL: https://cs4485-project-resetneutral.pages.dev/
