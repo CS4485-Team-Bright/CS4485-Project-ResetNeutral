@@ -1,92 +1,103 @@
 # ResetNeutral
 
-**Accessible Fighting Game Wiki and Browser Training Engine**
+**An accessible fighting game wiki and in-browser combo trainer.**
 
-ResetNeutral is a free, web-based platform for anyone looking to get into fighting games. It provides a centralized knowledge base of game mechanics, character move-sets, and combo data — plus an in-browser Training Ground where players can practice inputs without purchasing a game first.
+ResetNeutral lowers the barrier of entry to fighting games. The genre has long been gatekept by paywalled training modes, dense move-list tables, and steep mechanical hurdles — players often have to buy the game before they can find out whether they even like it. ResetNeutral brings the wiki and the lab together in one free site: structured per-game and per-character pages sit next to a browser-based Practice Arena where you can drill move inputs and combo notation against the real frame data, no install required.
 
-- Currently Hosted at https://cs4485-project-resetneutral.pages.dev/
-- Project Management located at https://github.com/orgs/CS4485-Team-Bright/projects/1/views/1
+- 🌐 **Live site:** https://cs4485-project-resetneutral.pages.dev/
+- 📋 **Project board:** https://github.com/orgs/CS4485-Team-Bright/projects/1
+
 ---
 
 ## Table of Contents
 
-- [Overview](#overview)
+- [Supported Games](#supported-games)
+- [Features](#features)
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
-- [Environment Variables](#environment-variables)
-- [API Reference](#api-reference)
+- [How the Practice Arena Works](#how-the-practice-arena-works)
+- [Routes](#routes)
+- [Team](#team)
 - [Build Phases](#build-phases)
-- [Non-Functional Requirements](#non-functional-requirements)
+- [Attributions](#attributions)
 
 ---
 
-## Overview
+## Supported Games
 
-| Field | Value |
-|---|---|
-| Version | 1.0 |
-| Build Plan | 5 Phases over 11 weeks |
-| Auth | Admin-only (content management) |
-| Environments | Development · Staging (Vercel) · Production (CloudFlare) |
+| Game | Short | Characters |
+|---|---|---|
+| Street Fighter 6 | SF6 | 29 |
+| Guilty Gear Strive | GGST | 30 |
+| 2XKO | 2XKO | 13 |
 
-**Target users:** new fighting game players, intermediate players expanding their game knowledge, and admin content curators.
+Each game ships with per-character move lists, combo recipes graded **Beginner / Intermediate / Advanced**, and game-specific input bindings tuned to its own notation system.
 
-**Core features:**
-- Structured wiki: general mechanics, per-game pages, per-character pages with moves/combos
-- Discoverable learning paths: Home → General / Games → Character → Combos
-- In-browser Training Ground with keystroke capture, combo recognition, and timing feedback (<200ms input latency target)
-- Admin dashboard for content management (games, characters, combos)
+---
+
+## Features
+
+- **Game and character browser** — Game-agnostic UI that re-themes per title, character cards with archetype/difficulty metadata, and full move/combo tables loaded live from Supabase.
+- **Practice Arena** — A keyboard-driven training mode that reads inputs frame-by-frame, recognizes directional motions in numpad notation (236, 623, 41236, …), validates multi-step combo chains, and gives audio + visual feedback on success or failure.
+- **Per-game input bindings** — Each game has its own keyboard map (e.g. SF6's six-button layout, 2XKO's L/M/H/S scheme), with crouching detection, facing-direction flips, and macro support.
+- **Mastery tracking** — Logged-in users get per-move and per-combo mastery progression that persists across sessions via a Supabase-backed `user_move_mastery` table, surfaced on the profile page.
+- **Standalone Phaser training ground** — A separate Phaser 3 prototype lives in `Training_Ground/` for gamepad-input experiments outside the React app.
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology | Notes |
-|---|---|---|
-| Frontend | HTML, CSS, JavaScript | Vanilla JS; modular component-like structure in `src/` |
-| HTTP Client | axios | Centralized in `src/api/` |
-| State | Vanilla JS modules | Single `ResetNeutral` namespace; no global mutable state |
-| Backend | Python, Flask | REST API under `/api/v1` |
-| Database | Firebase / Firestore or Supabase | One instance per environment |
-| Auth | Admin-only token/session | Public browsing requires no auth |
-| Hosting | CloudFlare | Backend API + static frontend |
-| Testing | pytest / Python unittest | API route tests; JS smoke tests optional |
+| Layer | Tools |
+|---|---|
+| Framework | React 18 · TypeScript · Vite 6 |
+| Routing | react-router v7 |
+| Styling | Tailwind CSS v4 · shadcn/ui · Radix UI primitives · Material UI |
+| State / Data | Supabase JS client · React hooks (`useGameData`, `useAuth`, `useMastery`) |
+| Backend | Supabase (Postgres + Auth) |
+| Testing | Vitest · @testing-library/jest-dom · jsdom |
+| Hosting | Cloudflare Pages (also AWS Amplify-compatible via `amplify.yml`) |
+| Training Ground | Phaser 3 (standalone) |
+
+> Note: the original project proposal called for a Python/Flask backend with Firebase. The team migrated to a React + Supabase stack during Phase 2 for faster iteration and to keep the entire app static-deployable to Cloudflare Pages.
 
 ---
 
 ## Project Structure
 
 ```
-easycombo/
-├── frontend/
-│   ├── public/
-│   │   ├── index.html
-│   │   └── favicon.ico
-│   └── src/
-│       ├── css/
-│       │   ├── base.css
-│       │   ├── layout.css
-│       │   └── components.css
-│       └── js/
-│           ├── main.js          # Bootstrap and routing
-│           ├── router.js        # Client-side router
-│           ├── api.js           # REST API wrapper
-│           ├── state.js         # In-memory state
-│           └── ui/
-│               ├── layout.js    # Nav, header, footer
-│               ├── home.js
-│               ├── general.js
-│               ├── games.js
-│               ├── characters.js
-│               ├── training.js
-│               └── admin.js
-└── backend/
-    ├── app/
-    │   │── datascraper.py
-    ├── .env.example
-    ├── requirements.txt
-    └── README.md
+CS4485-Project-ResetNeutral/
+├── src/
+│   ├── main.tsx                       # Vite entry point
+│   ├── app/
+│   │   ├── App.tsx                    # AuthProvider + RouterProvider
+│   │   ├── routes.tsx                 # Route definitions
+│   │   ├── api/client.ts              # Supabase client (reads VITE_SUPABASE_*)
+│   │   ├── components/
+│   │   │   ├── HomePage.tsx
+│   │   │   ├── GamesListPage.tsx
+│   │   │   ├── GamePage.tsx
+│   │   │   ├── CharacterPage.tsx
+│   │   │   ├── PracticeArena.tsx      # The training mode (heart of the app)
+│   │   │   ├── InputDisplay.tsx
+│   │   │   ├── AuthPage.tsx
+│   │   │   ├── ProfilePage.tsx
+│   │   │   ├── Navbar.tsx
+│   │   │   └── ui/                    # shadcn/ui primitives
+│   │   ├── hooks/
+│   │   │   ├── useAuth.tsx
+│   │   │   ├── useGameData.ts
+│   │   │   └── useMastery.tsx
+│   │   ├── types/game.ts              # Game / Character / Move / Combo types
+│   │   └── utils/inputConfig.tsx      # Per-game key bindings + notation parser
+│   └── styles/                        # Tailwind, theme, fonts
+├── public/Images/                     # Character portraits (2XKO, GGST, SF6)
+├── Training_Ground/Reset_Neutral/     # Standalone Phaser prototype
+├── Documents/                         # Spec, weekly reports, meeting minutes
+├── index.html
+├── package.json
+├── vite.config.ts                     # Vite config with React + Tailwind plugins
+└── amplify.yml                        # AWS Amplify build manifest
 ```
 
 ---
@@ -95,137 +106,114 @@ easycombo/
 
 ### Prerequisites
 
-- Python 3.10+
-- Node.js (optional, for frontend tooling)
-- A Firebase or Supabase project
+- Node.js 18+ and npm
+- A Supabase project provisioned with the `games`, `characters`, `moves`, `combos`, and `user_move_mastery` tables
 
-### Backend
+### Install and run
 
 ```bash
-cd backend
-python -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env   # fill in required values
-python -m app          # starts Flask on PORT
+git clone https://github.com/CS4485-Team-Bright/CS4485-Project-ResetNeutral.git
+cd CS4485-Project-ResetNeutral
+npm install
+npm run dev
 ```
 
-### Frontend
+The Vite dev server starts at `http://localhost:5173` by default.
 
-Open `frontend/public/index.html` directly in a browser, or serve with any static file server:
+### Environment variables
 
-```bash
-npx serve frontend/public
+Create a `.env.local` file at the project root:
+
+```
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
-Set `GITHUB_RAW_BASE_URL` (or equivalent) to point at your running Flask backend.
+The Supabase client throws at startup if either variable is missing, so the app fails fast on misconfiguration.
 
-### Seed Data
+### Build
 
 ```bash
-python scripts/seed_data.py
+npm run build      # outputs to dist/
+npm run preview    # serve the production build locally
 ```
 
 ### Tests
 
 ```bash
-pytest backend/tests/
+npm run test       # watch mode (Vitest)
+npm run test:ci    # one-shot CI run (passes with no tests)
+```
+
+### Standalone Phaser Training Ground
+
+```bash
+cd Training_Ground/Reset_Neutral
+# open index.html via any static server, e.g.
+npx serve .
 ```
 
 ---
 
-## Environment Variables
+## How the Practice Arena Works
 
-Copy `.env.example` and fill in all values. The backend will **fail fast** at startup if any required variable is missing.
+`src/app/utils/inputConfig.tsx` holds the per-game keyboard maps and notation parser. When a user is on a character page:
 
-**Backend**
+1. Each `keydown`/`keyup` updates an `activeKeys` set.
+2. Direction keys (WASD or arrow keys) are folded into **numpad notation** (1–9), with facing-direction flips for left-side play.
+3. Held buttons are mapped to game-specific button IDs (e.g. SF6 → LP/MP/HP/LK/MK/HK; 2XKO → L/M/H/S).
+4. Combo recipes are pre-parsed into `ParsedStep[]`, and each tick checks whether the current input plus recent history satisfies the next step's macro.
+5. On a complete chain the WebAudio engine plays an ascending tone per step; failed inputs trigger a low sawtooth buzz.
 
-| Variable | Description |
-|---|---|
-| `SUPABASE_URL` / `SUPABASE_API_KEY` | Primary data store connection |
-| `ADMIN_JWT_SECRET` | Secret for admin auth tokens |
-| `PORT` | Flask listen port |
-| `FRONTEND_URL` | Allowed CORS origin |
-| `NODE_ENV` | `development` \| `staging` \| `production` |
-
-**Frontend**
-
-| Variable | Description |
-|---|---|
-| `GITHUB_RAW_BASE_URL` | Base URL for the Flask backend |
+Authenticated users have move and combo attempts written to Supabase via `recordMoveAttempt`, feeding the streak and mastery state shown on the profile page.
 
 ---
 
-## API Reference
+## Routes
 
-**Base URL:** `/api/v1`  
-All responses are JSON. Public read endpoints require no auth. Admin/write endpoints require a valid admin token.
+| Path | Page |
+|---|---|
+| `/` | Home — hero, game cards, featured characters |
+| `/games` | All supported games |
+| `/game/:gameId` | Game detail + character roster |
+| `/game/:gameId/character/:characterId` | Character moves, combos, and Practice Arena |
+| `/auth` | Sign in / sign up (Supabase) |
+| `/profile` | User profile + mastery progress |
+| `*` | 404 |
 
-### Games
+---
 
-| Method | Route | Description |
-|---|---|---|
-| GET | `/games` | List all game IDs |
-| GET | `/games/{gameId}` | Game metadata (name, description, publisher, consoles, DLC) |
-| GET | `/games/{gameId}/config` | Render config and frame data hints (cache client-side) |
+## Team
 
-### Characters
+| Member | Role |
+|---|---|
+| Adam M. Jackson | Backend Infrastructure — Database & Auth Lead |
+| Luis C. Gutierrez | Backend Infrastructure — Data Architect / API Lead |
+| Zachary Karanja | Frontend UI — Combo Logic & Visualization |
+| Alexis Vazquez | Frontend UI — Global UI/UX |
+| Josh A. McKone | Frontend Input — Game-Loop Integration |
+| Eric M. Wilhoit | Frontend Input — State Machine Lead |
 
-| Method | Route | Description |
-|---|---|---|
-| GET | `/games/{gameId}/characters` | List character IDs |
-| GET | `/games/{gameId}/characters/{characterId}` | Character resources list |
-
-### Resources
-
-| Method | Route | Description |
-|---|---|---|
-| GET | `/games/{gameId}/characters/{characterId}/{resource}` | Resource subtypes (e.g. combo categories) |
-| GET | `/games/{gameId}/characters/{characterId}/{resource}/{type}` | Detailed data for a resource type |
-
-### Admin
-
-| Method | Routes | Description |
-|---|---|---|
-| POST/PATCH/DELETE | `/admin/games`, `/admin/games/{gameId}` | Manage games |
-| POST/PATCH/DELETE | `/admin/games/{gameId}/characters/...` | Manage characters |
-| POST/PATCH/DELETE | `/admin/combos`, `/admin/combos/{comboId}` | Manage combos |
-
-### Error Format
-
-```json
-{
-  "error": {
-    "code": 404,
-    "message": "Character not found"
-  }
-}
-```
-
-Standard codes: `400` validation, `401` unauthorized, `403` forbidden, `404` not found, `409` conflict, `429` rate limited, `500` server error.
+See [`ROLES_DESC.md`](./ROLES_DESC.md) for full role descriptions.
 
 ---
 
 ## Build Phases
 
-| Phase | Goal | Dates |
+| Phase | Goal | Window |
 |---|---|---|
-| 1 — Foundations | Scope, architecture diagram, data model, API contract | 2/13 – 2/20 |
-| 2 — UI/UX & Data | Figma mockups, seed dataset, core read-only API | 2/20 – 2/27 |
-| 3 — MVP Dev | Navigable wiki, Training Ground with basic combo detection | 2/27 – 4/17 |
-| 4 — Testing & Beta | Integration tests, QA report, expanded content | 4/17 – 4/24 |
-| 5 — Deploy & Handover | Production CloudFlare deploy, final demo, tagged GitHub release | 4/24 – 5/1 |
+| 1 — Foundations | Scope, architecture, data model | 2/13 – 2/20 |
+| 2 — UI/UX & Data | Figma mockups, seed data, read-only API | 2/20 – 2/27 |
+| 3 — MVP | Navigable wiki + Practice Arena with combo detection | 2/27 – 4/17 |
+| 4 — Beta & QA | Integration tests, content fill-out, bug bash | 4/17 – 4/24 |
+| 5 — Deploy & Handover | Production Cloudflare deploy, final demo, tagged release | 4/24 – 5/1 |
 
 ---
 
-## Non-Functional Requirements
+## Attributions
 
-- **Page load:** < ~2 seconds on typical lab hardware
-- **Training Ground input latency:** < 200ms for visible feedback
-- **API response time:** < 300ms for core data endpoints
-- **Combo recognition accuracy:** ≥ 90% for preset sequences in controlled tests
-- **Accessibility:** WCAG AA contrast, keyboard navigable, alt text on all images, ARIA labels on Training Ground controls
-- **Code:** Backend logic split into `api/`, `services/`, `utils/` — no duplicated route logic
+UI primitives from [shadcn/ui](https://ui.shadcn.com/) (MIT). Some imagery from [Unsplash](https://unsplash.com). See [`ATTRIBUTIONS.md`](./ATTRIBUTIONS.md). Character portraits and game names belong to their respective publishers (Capcom, Arc System Works, Riot Games) and are used here for educational reference within this academic project.
 
 ---
 
-*ResetNeutral v1.0 — spec last updated March 2026*
+*CS 4485 — Team Bright (Team #5) — UT Dallas Computer Science Senior Capstone*
