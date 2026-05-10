@@ -214,6 +214,8 @@ See [`ROLES_DESC.md`](./ROLES_DESC.md) for full role descriptions.
 
 UI primitives from [shadcn/ui](https://ui.shadcn.com/) (MIT). Some imagery from [Unsplash](https://unsplash.com). See [`ATTRIBUTIONS.md`](./ATTRIBUTIONS.md). Character portraits and game names belong to their respective publishers (Capcom, Arc System Works, Riot Games) and are used here for educational reference within this academic project.
 
+Move images sourced from the [2XKO wiki](https://wiki.play2xko.com/en-us/), [Dustloop's Guilty Gear Strive wiki](https://www.dustloop.com/w/GGST), and [SuperCombo's Street Fighter 6 wiki](https://wiki.supercombo.gg/w/Street_Fighter_6). Our move logical data (input sequence, framedata, damage, etc.) was primarily sourced from the [FAT public repository](https://github.com/D4RKONION/FAT/).
+
 ---
 
 *CS 4485 — Team Bright (Team #5) — UT Dallas Computer Science Senior Capstone*
